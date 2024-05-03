@@ -1,0 +1,13 @@
+numpy
+pandas
+rdkit==2023.9.1
+matplotlib==3.8.2
+wandb==0.16.1
+networkx==3.2.1
+torchdata
+pydantic
+lightning==2.1.2
+openpyxl # reading excel
+tqdm
+pandas
+scikit-learn
