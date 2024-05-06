@@ -16,7 +16,11 @@ import dgl
 import networkx as nx
 from typing import List
 from torch.utils.data import Dataset
+from pathlib import Path
+import numpy as np
 
+def get_data_path():
+    return (Path(__file__).parent.parent.parent / 'data').resolve().absolute()
 
 class DGLDataset(Dataset):
     def __init__(self, dspath:str=None, graphs:list=None):
@@ -37,6 +41,76 @@ class DGLDataset(Dataset):
     def collate_fn(self, batch):
         return dgl.batch(batch)
     
+
+def encode_beads_onehot(fragname:List[int])->np.ndarray:
+    '''
+    Returns a one-hot encoding of the fragment name as an array of shape (21,) where the first 3 entries one-hot encode the size, the next 5 entries one-hot encode the polarity, the next 7 entries one-hot encode the level of the polarity, the next 3 entries one-hot encode the first degree label, and the last 3 entries one-hot encode the second degree label according to the encoding in encode_beads_int.
+    '''
+    int_encoding = encode_beads_int(fragname)
+
+    onehot_encoding = [np.zeros(3), np.zeros(5), np.zeros(7), np.zeros(3), np.zeros(3)]
+
+    for idx, enc in enumerate(int_encoding):
+        onehot_encoding[idx][enc] = 1
+
+    return np.concatenate(onehot_encoding, axis=0).flatten()
+
+
+def encode_beads_int(fragname):
+    """
+    Decodes beadtypes into numbers.
+
+    - size is econded as 0, 1, 2 correspoding
+      to regular, small, and tiny beads
+
+    - polarity is econded as 0, 1, 2, 3, 4 corresponding
+      to charged (Q), polar (P), neutral (N), hydrophobic (C),
+      and halo compounds (X).
+
+    - each polarity has a level going 0 to 5 with exception of Q
+      and X beads that have 5, and 4 levels respectively
+
+    - first degree labels can be a or d; no label is 0
+
+    - second degree labels can be r or h; no label is 0
+
+
+    encoding is a list of length 5, where the entries are integers running from [0-2, 0-4, 0-6, 0-2, 0-2]
+    """
+    encoding = [0,0,0,0,0]
+    polarity_encoding = {'Q': 0,
+                         'P': 1,
+                         'N': 2,
+                         'C': 3,
+                         'X': 4}
+
+    for idx, token in enumerate(str(fragname)):
+        # does the sizes
+        if idx == 0 and token == 'S':
+            encoding[0] = 1
+        elif idx == 0 and token == 'T':
+            encoding[0] = 2
+        elif idx == 0:
+            encoding[0] = 0
+
+        if token in 'Q P N C X'.split():
+            encoding[1] = polarity_encoding[token]
+
+        if token.isdigit():
+            encoding[2] = int(token)
+            assert encoding[2] <= 6, f"Level of polarity must be between 0 and 6, but got {encoding[2]}"
+
+    if 'a' in fragname:
+        encoding[3] = 1
+    elif 'd' in fragname:
+        encoding[3] = 2
+
+    if 'r' in fragname:
+        encoding[4] = 1
+    if 'h' in fragname:
+        encoding[4] = 2
+
+    return encoding
 
 
 def homgraph_to_hetgraph(g, global_feats:List[str]=["logp"]):
@@ -108,13 +182,19 @@ def networkx_to_dgl(aa_mol: nx.Graph):
     # one-hot encode the element:
     atomic_number = [one_hot_encode_element(data['element']) for _, data in aa_mol.nodes(data=True)]
     is_aromatic = [1 if data['aromatic'] else 0 for _, data in aa_mol.nodes(data=True)]
-    # NOTE: do a good encoding of the fragment id later on
 
     dgl_graph.ndata['logp'] = torch.ones(dgl_graph.num_nodes()) * log_p
     dgl_graph.ndata['total_charge'] = torch.ones(dgl_graph.num_nodes()) * total_charge
 
     dgl_graph.ndata['atomic_number'] = torch.stack(atomic_number).float()
     dgl_graph.ndata['is_aromatic'] = torch.tensor(is_aromatic).float()
+
+    # print all node feature types (keys):
+
+    has_cg_encoding = any('cg_encoding' in data for _, data in aa_mol.nodes(data=True))
+    if has_cg_encoding:
+        cg_encoding = torch.tensor([data['cg_encoding'] for _, data in aa_mol.nodes(data=True)])
+        dgl_graph.ndata['cg_encoding'] = cg_encoding
 
     return dgl_graph
 

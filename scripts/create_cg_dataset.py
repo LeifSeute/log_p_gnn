@@ -9,7 +9,7 @@ if __name__ == '__main__':
     import cgsmiles
     from tqdm import tqdm
     from pathlib import Path
-    from log_p_gnn.data_utils import homgraph_to_hetgraph, networkx_to_dgl, MAX_BOND_ORDER, ELEMENTS
+    from log_p_gnn.data_utils import homgraph_to_hetgraph, networkx_to_dgl, MAX_BOND_ORDER, ELEMENTS, encode_beads_onehot
 
     thisdir = Path(__file__).parent
 
@@ -20,11 +20,15 @@ if __name__ == '__main__':
     parser.add_argument('--cg_data', type=str, default=f'{thisdir}/../data/MartiniCGSmilesDB.xlsx',
                         help='Path to the CG data file.')
     
-    parser.add_argument('--output', type=str, default=f'{thisdir}/../data/dgl_dataset.bin',
+    parser.add_argument('--output', type=str, default=f'{thisdir}/../data/cg_dgl_dataset.bin',
                         help='Path to the output file.')
     
     args = parser.parse_args()
 
+
+# define mol not found err:
+    class MolNotFound(Exception):
+        pass
 
     def get_mols(log_p_data:str='Final MFLOGP Dataset.xlsx', cg_data:str='MartiniCGSmilesDB.xlsx'):
 
@@ -35,6 +39,7 @@ if __name__ == '__main__':
         for mol_name, smiles_str, LogP in zip(ref_df.get('Names'), ref_df.get('SMILES'), ref_df.get('Exp logp')):
             g = pysmiles.read_smiles(smiles_str, explicit_hydrogen=True)
             LogPs.append((g, LogP))
+
 
         aa_mols, cg_mols = [], []
         m3_df = pd.read_excel(cg_data, sheet_name='All')
@@ -64,13 +69,22 @@ if __name__ == '__main__':
                         nx.set_node_attributes(cg_mol, LogP, "logp")
                         break
                 else:
-                    raise RuntimeError(f"No match found for {mol_name}")
-                
+                    raise MolNotFound(f"No match found for {mol_name}")
+                    
+                # set the encoding:
+                fragments = [n for _, n in aa_mol.nodes(data='fragname')]
+
+                cg_encodings = [encode_beads_onehot(frag) for frag in fragments]
+
+                node_encodings = {node: enc for node, enc in zip(aa_mol.nodes(), cg_encodings)}
+
+                nx.set_node_attributes(aa_mol, node_encodings, 'cg_encoding')
+
                 aa_mols.append(aa_mol)
                 cg_mols.append(cg_mol)
             
-            except Exception as e:
-                print(f"Error encountered when processing {mol_name}: {e}")
+            except MolNotFound as e:
+                print(f"Mol not found: {mol_name}")
                 continue
 
         print(f"Found log P data for {len(aa_mols)} out of {len(m3_df)} molecules.")

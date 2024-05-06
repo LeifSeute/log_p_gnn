@@ -30,6 +30,9 @@ var/
 
 data/
 
+# exclude excel files in data:
+!data/*.xlsx
+
 notes.md
 
 **.h5
