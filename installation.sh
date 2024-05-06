@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Default to "cpu" if no argument provided, otherwise use the provided CUDA version
-cuda_version=${1:-"cpu"}
+cuda_version=${1:-"cuda"} # can also be 'cpu' if no cuda support or installation fails
 
 # Check that we are not in the base Conda environment
 if [ "$CONDA_DEFAULT_ENV" == "base" ]; then
