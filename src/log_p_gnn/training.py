@@ -146,7 +146,7 @@ class GrappaGNNModule(pl.LightningModule):
         wandb.run.summary["final_test_rmse"] = rmse.item()
         wandb.run.summary["final_test_mae"] = mae.item()
         wandb.run.summary["test_std_dev"] = target.std().item()
-        
+
         if self.test_step_counter > 1:
             raise ValueError('test_step was called more than once, number of batches on the test dataloader must be set to 1')
         self.test_step_counter += 1
@@ -174,7 +174,7 @@ def do_mflogp_split(graphs:List[dgl.DGLGraph])->Tuple[List[dgl.DGLGraph], List[d
     # copied from https://github.com/TeixeiraResearchLab/MF-LOGP_Development-/blob/main/MFLOGP_Training_Script.py:
     ##################################################################################
     [X, Vault_X, Y, Vault_Y] = train_test_split(x,y,train_size = 0.85, random_state = 42)
-    [X_train,X_test,y_train,y_test]=train_test_split(X,Y,train_size=0.8,shuffle = True)
+    [X_train,X_test,y_train,y_test]=train_test_split(X,Y,train_size=0.8,shuffle = True, random_state=42)
     ##################################################################################
 
     # rename:

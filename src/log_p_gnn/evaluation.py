@@ -53,11 +53,11 @@ def eval_plots(model, train_dl, val_dl, test_dl, device=torch.device('cuda') if 
 
     for i, (dl, title) in enumerate(zip([train_dl, val_dl, test_dl], ['Train', 'Validation', 'Test'])):
         predictions, targets = [], []
-        for i,g in enumerate(dl):
+        for _,g in enumerate(dl):
             with torch.no_grad():
                 g = g.to(device)
-                x = model(g)[:,0].detach().cpu().numpy()
-                y = g.nodes['global'].data['logp'].detach().cpu().numpy()
+                x = model(g)[:,0].detach().cpu().numpy().flatten()
+                y = g.nodes['global'].data['logp'].detach().cpu().numpy().flatten()
             predictions.append(x)
             targets.append(y)
 

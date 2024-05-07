@@ -18,3 +18,7 @@ bash scripts/generate_datasets.sh
 cd scripts
 python train_cg.py # (You will need to login to your free wandb account for tracking the metrics. Modify the config dict in the script to change the hyperparameters)
 ```
+
+
+### Evaluation
+Use the script in `scripts/evaluate.py` and insert your checkpoint path to evaluate the model.
