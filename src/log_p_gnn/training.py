@@ -1,6 +1,4 @@
-from log_p_gnn.grappa_model import GrappaGNN
-from log_p_gnn.readout import Readout, Denormalize
-from log_p_gnn.dgl_pooling import DGLPooling
+from log_p_gnn.get_model import get_model
 from sklearn.model_selection import train_test_split
 from pathlib import Path
 from typing import List, Tuple
@@ -17,6 +15,7 @@ from torch.utils.data import DataLoader
 from torch.optim import Adam
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
+from log_p_gnn.evaluation import get_best_checkpoint_path
 
 
 
@@ -41,7 +40,7 @@ def train_model(config:dict):
     model(dummy_graph)
 
     # init the trainer
-    trainer = get_trainer(config)
+    trainer, wandb_path = get_trainer(config)
 
     module = GrappaGNNModule(model, config)
 
@@ -50,8 +49,8 @@ def train_model(config:dict):
 
     # Evaluate the best-validation model on the test set
     print('\n\nEvaluating model with best validation RMSE...')
-    print(f'Best model path: {trainer.callbacks[-1].best_model_path}\n')
-    best_model_path = trainer.callbacks[-1].best_model_path
+    best_model_path = get_best_checkpoint_path(wandb_path.parent/'checkpoints')
+    print(f'Best model path: {best_model_path}\n')
     state_dict = torch.load(best_model_path)['state_dict']
     module.load_state_dict(state_dict)
 
@@ -88,9 +87,9 @@ def get_trainer(config)->pl.Trainer:
     with open(wandb_path / 'log_p_gnn_config.yaml', 'w') as f:
         yaml.dump(config, f)
 
-    trainer = pl.Trainer(max_epochs=2000, accelerator='gpu', logger=logger, callbacks=[checkpoint_callback], check_val_every_n_epoch=2, log_every_n_steps=10, gradient_clip_val=1.0)
+    trainer = pl.Trainer(max_epochs=2000, accelerator='gpu', logger=logger, callbacks=[checkpoint_callback], check_val_every_n_epoch=1, log_every_n_steps=1, gradient_clip_val=1.0)
 
-    return trainer
+    return trainer, wandb_path
     
 class GrappaGNNModule(pl.LightningModule):
     def __init__(self, model, config):
@@ -102,13 +101,15 @@ class GrappaGNNModule(pl.LightningModule):
 
         self.accumulated_batches = 0
         self.epoch_cycles = config['training']['epoch_cycles']
+
+        self.test_step_counter = 0
         
     def forward(self, g):
         return self.model(g)[:,0]        
 
     def training_step(self, batch, batch_idx):
         g = batch
-        batchsize = g.num_nodes('global')
+        batchsize = len(g.nodes['global'].data['logp'].flatten())
         x = self.forward(g)
         target = g.nodes['global'].data['logp']
 
@@ -123,19 +124,19 @@ class GrappaGNNModule(pl.LightningModule):
     
     def validation_step(self, batch, batch_idx):
         g = batch
-        batchsize = g.num_nodes('global')
+        batchsize = len(g.nodes['global'].data['logp'].flatten())
+
         x = self.forward(g)
         target = g.nodes['global'].data['logp']
         rmse = torch.sqrt(torch.square(x - target).mean())
         mae = torch.abs(x - target).mean()
         self.log('val_rmse', rmse, batch_size=batchsize, on_step=False, on_epoch=True)
         self.log('val_mae', mae, batch_size=batchsize, on_step=False, on_epoch=True)
-        self.log('val_std_dev', target.std(), batch_size=batchsize, on_step=False, on_epoch=True)
+        # self.log('val_std_dev', target.std(), batch_size=batchsize, on_step=False, on_epoch=True)
         self.log('batch_size', batchsize, batch_size=batchsize, on_step=False, on_epoch=True)
     
     def test_step(self, batch, batch_idx):
         g = batch
-        batchsize = g.num_nodes('global')
         x = self.forward(g)
         target = g.nodes['global'].data['logp']
         rmse = torch.sqrt(torch.square(x - target).mean())
@@ -145,26 +146,13 @@ class GrappaGNNModule(pl.LightningModule):
         wandb.run.summary["final_test_rmse"] = rmse.item()
         wandb.run.summary["final_test_mae"] = mae.item()
         wandb.run.summary["test_std_dev"] = target.std().item()
+        
+        if self.test_step_counter > 1:
+            raise ValueError('test_step was called more than once, number of batches on the test dataloader must be set to 1')
+        self.test_step_counter += 1
 
     def configure_optimizers(self):
         return self.opt
-
-
-def get_model(config, train_target_mean=0, train_target_std=1):
-
-    gnn = GrappaGNN(out_feats=config['gnn']['out_feats'], in_feat_name=config['gnn']['in_feat_name'], in_feat_dims=config['gnn']['in_feat_dims'], n_att=config['gnn']['n_att'], n_heads=config['gnn']['n_heads'], attention_dropout=config['gnn']['attention_dropout'], final_dropout=config['gnn']['final_dropout'], charge_encoding=False, n_conv=config['gnn']['n_conv'], initial_dropout=config['gnn']['initial_dropout'], layer_norm=True)
-
-    pooler = DGLPooling(**config['pooling'])
-
-    pooling_out_dim = sum([config['gnn']['out_feats'] for _ in config['pooling'].values() if _])
-
-    readout = Readout(in_features=pooling_out_dim, out_features=1, hidden_features=config['readout']['feats'], num_layers=config['readout']['num_layers'], dropout=config['readout']['dropout'])
-
-    denormalizer = Denormalize(mean=train_target_mean, std=train_target_std, learnable=config['denormalizer']['learnable'])
-
-    model = torch.nn.Sequential(gnn, pooler, readout, denormalizer)
-
-    return model
 
 
 def infer_feat_dims(g:dgl.DGLGraph, feat_names:list):
@@ -198,6 +186,11 @@ def do_mflogp_split(graphs:List[dgl.DGLGraph])->Tuple[List[dgl.DGLGraph], List[d
     print('number of validation graphs:', len(val_graphs))
     print('number of test graphs:', len(test_graphs))
 
+    std_val = torch.cat([g.nodes['global'].data['logp'].flatten() for g in val_graphs]).std()
+    std_test = torch.cat([g.nodes['global'].data['logp'].flatten() for g in test_graphs]).std()
+    print('std of validation set:', std_val)
+    print('std of test set:', std_test)
+
     return train_graphs, val_graphs, test_graphs
 
 
@@ -207,7 +200,6 @@ def get_loaders(train_graphs:List[dgl.DGLGraph], val_graphs:List[dgl.DGLGraph], 
     train_graphs = [g for g in train_graphs for _ in range(config['training']['epoch_cycles'])]
 
     train_ds, val_ds, test_ds = DGLDataset(graphs=train_graphs), DGLDataset(graphs=val_graphs), DGLDataset(graphs=test_graphs)
-
 
     train_dl = DataLoader(train_ds, batch_size=config['training']['batch_size'], shuffle=True, collate_fn=train_ds.collate_fn, drop_last=True, num_workers=2)
 

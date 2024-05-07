@@ -20,7 +20,7 @@ if __name__ == '__main__':
     parser.add_argument('--cg_data', type=str, default=f'{thisdir}/../data/MartiniCGSmilesDB.xlsx',
                         help='Path to the CG data file.')
     
-    parser.add_argument('--output', type=str, default=f'{thisdir}/../data/cg_dgl_dataset.bin',
+    parser.add_argument('--output', type=str, default=f'{thisdir}/../data/cg_all_atom_dgl_dataset.bin',
                         help='Path to the output file.')
     
     args = parser.parse_args()
@@ -41,7 +41,7 @@ if __name__ == '__main__':
             LogPs.append((g, LogP))
 
 
-        cg_mols = []
+        aa_mols, cg_mols = [], []
         m3_df = pd.read_excel(cg_data, sheet_name='All')
         for mol_name, smiles_str, cgsmiles_str in tqdm(zip(m3_df.get('Name'), m3_df.get('SMILES'), m3_df.get('CGSmiles'))):
             try:
@@ -72,31 +72,32 @@ if __name__ == '__main__':
                     raise MolNotFound(f"No match found for {mol_name}")
                     
                 # set the encoding:
-                fragments = [n for _, n in cg_mol.nodes(data='fragname')]
+                fragments = [n for _, n in aa_mol.nodes(data='fragname')]
 
                 cg_encodings = [encode_beads_onehot(frag) for frag in fragments]
 
-                node_encodings = {node: enc for node, enc in zip(cg_mol.nodes(), cg_encodings)}
+                node_encodings = {node: enc for node, enc in zip(aa_mol.nodes(), cg_encodings)}
 
-                nx.set_node_attributes(cg_mol, node_encodings, 'cg_encoding')
+                nx.set_node_attributes(aa_mol, node_encodings, 'cg_encoding')
 
+                aa_mols.append(aa_mol)
                 cg_mols.append(cg_mol)
             
             except MolNotFound as e:
                 print(f"Mol not found: {mol_name}")
                 continue
 
-        print(f"Found log P data for {len(cg_mols)} out of {len(m3_df)} molecules.")
+        print(f"Found log P data for {len(aa_mols)} out of {len(m3_df)} molecules.")
 
-        return cg_mols
+        return aa_mols, cg_mols
 
 
     if not Path(args.output).parent.exists():
         Path(args.output).parent.mkdir(parents=True)
     
-    cg_mols = get_mols(args.log_p_data, args.cg_data)
+    aa_mols, cg_mols = get_mols(args.log_p_data, args.cg_data)
 
-    graphs = [homgraph_to_hetgraph(networkx_to_dgl(cg_mol, is_cg=True), global_feats=['logp']) for cg_mol in tqdm(cg_mols)]
+    graphs = [homgraph_to_hetgraph(networkx_to_dgl(aa_mol), global_feats=['logp']) for aa_mol in tqdm(aa_mols)]
 
     dgl.save_graphs(args.output, graphs)
 

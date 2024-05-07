@@ -25,3 +25,5 @@ pip install -e .
 set -e .
 python test_install.py
 echo "Installation successful. Environment name: $CONDA_DEFAULT_ENV."
+
+echo "Now please install the CGsmiles package to generate datasets in scripts/generate_datasets.sh"

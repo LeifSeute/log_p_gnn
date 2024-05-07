@@ -113,14 +113,21 @@ def encode_beads_int(fragname):
     return encoding
 
 
-def homgraph_to_hetgraph(g, global_feats:List[str]=["logp"]):
+def homgraph_to_hetgraph(g, global_feats=["logp"]):
     """
-    Creates a heterograph with node type atom and edge type bond from the homograph g.
-    creates a node type global that represens a single feature, which is simply the zeroth entry of the global_feats feature types (for which we assert that they are all the same).
+    Creates a heterograph with node type 'atom' and edge type 'bond' from the homograph g.
+    Creates a node type 'global' that represents a single feature, which is simply the zeroth entry
+    of the global_feats feature types (for which we assert that they are all the same).
     """
 
-    # Initialize node and edge connectivity for the atom type
-    src_nodes, dst_nodes = g.edges()
+    # Initialize node and edge connectivity for the 'atom' type
+    if g.number_of_nodes() == 1:
+        # If only one node, add a self-loop
+        src_nodes = dst_nodes = torch.tensor([0])
+    else:
+        # Otherwise, use the existing edges
+        src_nodes, dst_nodes = g.edges()
+
     data_dict = {
         ('atom', 'bond', 'atom'): (src_nodes, dst_nodes),
         ('global', 'global_self', 'global'): (torch.tensor([0]), torch.tensor([0]))
@@ -129,7 +136,7 @@ def homgraph_to_hetgraph(g, global_feats:List[str]=["logp"]):
     # Create the heterograph
     hg = dgl.heterograph(data_dict)
     
-    # Transfer node features from homograph to heterograph for 'atom' type
+    # Transfer node features from the homograph to the heterograph for 'atom' type
     for key, value in g.ndata.items():
         hg.nodes['atom'].data[key] = value
     
@@ -156,40 +163,41 @@ def one_hot_encode_element(element):
         raise ValueError(f"Element {element} not found in the list of elements.")
     return t
 
-def networkx_to_dgl(aa_mol: nx.Graph):
+def networkx_to_dgl(aa_mol: nx.Graph, is_cg:bool=False):
     dgl_graph = dgl.from_networkx(aa_mol)
 
     # edge features (dgl has every edge 2 times since it treats them as directed edges, so we need to set the bond order for both directions)
     ############################
-    edge_orders = nx.get_edge_attributes(aa_mol, 'order')
-    # For each edge in DGL (which will now correctly handle undirected edges as two directed edges)
-    dgl_graph.edata['bond_order'] = torch.zeros(dgl_graph.num_edges(), MAX_BOND_ORDER)
-    for (u, v), order in edge_orders.items():
-        # Since DGL treats these edges as directed, we need to find the edge in both directions
-        edge_u_v = dgl_graph.edge_ids(u, v)
-        edge_v_u = dgl_graph.edge_ids(v, u)
-        bond_order_u_v = torch.tensor([1 if i == order else 0 for i in range(MAX_BOND_ORDER)])
-        bond_order_v_u = torch.tensor([1 if i == order else 0 for i in range(MAX_BOND_ORDER)])
-        dgl_graph.edata['bond_order'][edge_u_v] = bond_order_u_v
-        dgl_graph.edata['bond_order'][edge_v_u] = bond_order_v_u
+    if not is_cg:
+        edge_orders = nx.get_edge_attributes(aa_mol, 'order')
+        # For each edge in DGL (which will now correctly handle undirected edges as two directed edges)
+        dgl_graph.edata['bond_order'] = torch.zeros(dgl_graph.num_edges(), MAX_BOND_ORDER)
+        for (u, v), order in edge_orders.items():
+            # Since DGL treats these edges as directed, we need to find the edge in both directions
+            edge_u_v = dgl_graph.edge_ids(u, v)
+            edge_v_u = dgl_graph.edge_ids(v, u)
+            bond_order_u_v = torch.tensor([1 if i == order else 0 for i in range(MAX_BOND_ORDER)])
+            bond_order_v_u = torch.tensor([1 if i == order else 0 for i in range(MAX_BOND_ORDER)])
+            dgl_graph.edata['bond_order'][edge_u_v] = bond_order_u_v
+            dgl_graph.edata['bond_order'][edge_v_u] = bond_order_v_u
     ############################
 
     # global features: (do not use formal charge as node feature as it breaks symmetry for certain molecules, e.g. carboxylate)
     log_p = aa_mol.nodes(data='logp')[0]
-    total_charge = sum([float(c) for _, c in aa_mol.nodes(data='charge')])
 
     # node features:
-    # one-hot encode the element:
-    atomic_number = [one_hot_encode_element(data['element']) for _, data in aa_mol.nodes(data=True)]
-    is_aromatic = [1 if data['aromatic'] else 0 for _, data in aa_mol.nodes(data=True)]
-
     dgl_graph.ndata['logp'] = torch.ones(dgl_graph.num_nodes()) * log_p
-    dgl_graph.ndata['total_charge'] = torch.ones(dgl_graph.num_nodes()) * total_charge
+    
+    if not is_cg:
+        total_charge = sum([float(c) for _, c in aa_mol.nodes(data='charge')])
+        # one-hot encode the element:
+        atomic_number = [one_hot_encode_element(data['element']) for _, data in aa_mol.nodes(data=True)]
+        is_aromatic = [1 if data['aromatic'] else 0 for _, data in aa_mol.nodes(data=True)]
 
-    dgl_graph.ndata['atomic_number'] = torch.stack(atomic_number).float()
-    dgl_graph.ndata['is_aromatic'] = torch.tensor(is_aromatic).float()
+        dgl_graph.ndata['total_charge'] = torch.ones(dgl_graph.num_nodes()) * total_charge
 
-    # print all node feature types (keys):
+        dgl_graph.ndata['atomic_number'] = torch.stack(atomic_number).float()
+        dgl_graph.ndata['is_aromatic'] = torch.tensor(is_aromatic).float()
 
     has_cg_encoding = any('cg_encoding' in data for _, data in aa_mol.nodes(data=True))
     if has_cg_encoding:

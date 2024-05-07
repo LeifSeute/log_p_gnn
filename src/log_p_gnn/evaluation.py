@@ -5,7 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from pathlib import Path
 import torch
-from log_p_gnn.training import get_model
+from log_p_gnn.get_model import get_model
 
 FONTSIZE = 22
 
@@ -16,15 +16,18 @@ plt.rcParams.update({'ytick.labelsize': FONTSIZE})
 plt.rcParams.update({'legend.fontsize': FONTSIZE})
 
 
-
-def load_from_checkpoint(checkpoint_dir):
-
+def get_best_checkpoint_path(checkpoint_dir):
     ckpt_paths = list(Path(checkpoint_dir).glob('*.ckpt'))
 
     # pick the path with the smallest validation RMSE:
     val_rmses = [float(str(p).split('val_rmse=')[-1].replace('.ckpt', '')) if 'val_rmse' in str(p) else float('inf') for p in ckpt_paths]
     best_ckpt = ckpt_paths[val_rmses.index(min(val_rmses))]
 
+    return best_ckpt
+
+def load_from_checkpoint(checkpoint_dir):
+
+    best_ckpt = get_best_checkpoint_path(checkpoint_dir=checkpoint_dir)
 
     # load the model:
     config = yaml.load((Path(checkpoint_dir).parent / 'files/log_p_gnn_config.yaml').read_text(), Loader=yaml.FullLoader)
