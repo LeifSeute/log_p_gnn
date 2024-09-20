@@ -30,6 +30,8 @@ var/
 
 data/
 
+slurm_logs/
+
 job.sh
 
 # exclude excel files in data:
