@@ -1,0 +1,17 @@
+defaults:
+  - train_hgcn
+  - _self_
+
+experiment:
+  wandb:
+    name: 'combined'
+
+model:
+  model_args:    
+    layers: 
+      - cg_to_cg
+      - cg_to_aa
+      - aa_to_aa
+
+    pooling_lvl: 'aa'
+    hidden_feats: 32

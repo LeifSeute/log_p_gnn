@@ -15,7 +15,7 @@ if dgl_available:
         Given a batched DGL graph, this module computes pooled quantities like max, mean,
         mean squared, etc., for each graph in the batch.
         '''
-        def __init__(self, max=True, mean=True, mean_squared=False, sum=False, var=False):
+        def __init__(self, max=False, mean=True, mean_squared=False, sum=False, var=False):
             super().__init__()
             self.max = max
             self.mean = mean

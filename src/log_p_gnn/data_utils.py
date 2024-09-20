@@ -1,4 +1,5 @@
 MAX_BOND_ORDER = 4
+MAX_NUM_H = 4
 
 # first 86 elements:
 ELEMENTS = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
@@ -15,34 +16,19 @@ import torch
 import dgl
 import networkx as nx
 from typing import List
-from torch.utils.data import Dataset
 from pathlib import Path
 import numpy as np
+from typing import Dict, List, Tuple
+import pandas as pd
+from tqdm import tqdm
+import cgsmiles
+
 
 def get_data_path():
     return (Path(__file__).parent.parent.parent / 'data').resolve().absolute()
-
-class DGLDataset(Dataset):
-    def __init__(self, dspath:str=None, graphs:list=None):
-        assert not (dspath is None and graphs is None), 'Either dspath or graphs must be provided'
-        assert not (dspath is not None and graphs is not None), 'Only one of dspath or graphs must be provided'
-
-        if graphs is not None:
-            self.graphs = graphs
-        else:    
-            self.graphs, _ = dgl.load_graphs(str(dspath))
-        
-    def __len__(self):
-        return len(self.graphs)
-    
-    def __getitem__(self, idx):
-        return self.graphs[idx]
-    
-    def collate_fn(self, batch):
-        return dgl.batch(batch)
     
 
-def encode_beads_onehot(fragname:List[int])->np.ndarray:
+def encode_beads_onehot(fragname:str)->np.ndarray:
     '''
     Returns a one-hot encoding of the fragment name as an array of shape (21,) where the first 3 entries one-hot encode the size, the next 5 entries one-hot encode the polarity, the next 7 entries one-hot encode the level of the polarity, the next 3 entries one-hot encode the first degree label, and the last 3 entries one-hot encode the second degree label according to the encoding in encode_beads_int.
     '''
@@ -56,7 +42,7 @@ def encode_beads_onehot(fragname:List[int])->np.ndarray:
     return np.concatenate(onehot_encoding, axis=0).flatten()
 
 
-def encode_beads_int(fragname):
+def encode_beads_int(fragname:str)->List[int]:
     """
     Decodes beadtypes into numbers.
 
@@ -113,98 +99,12 @@ def encode_beads_int(fragname):
     return encoding
 
 
-def homgraph_to_hetgraph(g, global_feats=["logp"]):
-    """
-    Creates a heterograph with node type 'atom' and edge type 'bond' from the homograph g.
-    Creates a node type 'global' that represents a single feature, which is simply the zeroth entry
-    of the global_feats feature types (for which we assert that they are all the same).
-    """
 
-    # Initialize node and edge connectivity for the 'atom' type
-    if g.number_of_nodes() == 1:
-        # If only one node, add a self-loop
-        src_nodes = dst_nodes = torch.tensor([0])
-    else:
-        # Otherwise, use the existing edges
-        src_nodes, dst_nodes = g.edges()
-
-    data_dict = {
-        ('atom', 'bond', 'atom'): (src_nodes, dst_nodes),
-        ('global', 'global_self', 'global'): (torch.tensor([0]), torch.tensor([0]))
-    }
-    
-    # Create the heterograph
-    hg = dgl.heterograph(data_dict)
-    
-    # Transfer node features from the homograph to the heterograph for 'atom' type
-    for key, value in g.ndata.items():
-        hg.nodes['atom'].data[key] = value
-    
-    # Transfer edge features from homograph to heterograph for 'bond' type
-    for key, value in g.edata.items():
-        hg.edges['bond'].data[key] = value
-    
-    # Assert that the global features are consistent
-    if len(set([g.ndata[feat][0] for feat in global_feats])) != 1:
-        raise ValueError("All global features must be the same across all nodes.")
-    
-    # Initialize global node feature
-    global_feature = g.ndata[global_feats[0]][0]  # We take the first element as all are asserted to be the same
-    for feat in global_feats:
-        hg.nodes['global'].data[feat] = torch.tensor([global_feature])
-
-    hg.nodes['atom'].data['degree'] = hg.in_degrees(etype='bond')
-    
-    return hg
-
-def one_hot_encode_element(element):
+def one_hot_encode_element(element: str) -> torch.Tensor:
     t = torch.tensor([1 if element == e else 0 for e in ELEMENTS])
     if sum(t) != 1:
         raise ValueError(f"Element {element} not found in the list of elements.")
     return t
-
-def networkx_to_dgl(aa_mol: nx.Graph, is_cg:bool=False):
-    dgl_graph = dgl.from_networkx(aa_mol)
-
-    # edge features (dgl has every edge 2 times since it treats them as directed edges, so we need to set the bond order for both directions)
-    ############################
-    if not is_cg:
-        edge_orders = nx.get_edge_attributes(aa_mol, 'order')
-        # For each edge in DGL (which will now correctly handle undirected edges as two directed edges)
-        dgl_graph.edata['bond_order'] = torch.zeros(dgl_graph.num_edges(), MAX_BOND_ORDER)
-        for (u, v), order in edge_orders.items():
-            # Since DGL treats these edges as directed, we need to find the edge in both directions
-            edge_u_v = dgl_graph.edge_ids(u, v)
-            edge_v_u = dgl_graph.edge_ids(v, u)
-            bond_order_u_v = torch.tensor([1 if i == order else 0 for i in range(MAX_BOND_ORDER)])
-            bond_order_v_u = torch.tensor([1 if i == order else 0 for i in range(MAX_BOND_ORDER)])
-            dgl_graph.edata['bond_order'][edge_u_v] = bond_order_u_v
-            dgl_graph.edata['bond_order'][edge_v_u] = bond_order_v_u
-    ############################
-
-    # global features: (do not use formal charge as node feature as it breaks symmetry for certain molecules, e.g. carboxylate)
-    log_p = aa_mol.nodes(data='logp')[0]
-
-    # node features:
-    dgl_graph.ndata['logp'] = torch.ones(dgl_graph.num_nodes()) * log_p
-    
-    if not is_cg:
-        total_charge = sum([float(c) for _, c in aa_mol.nodes(data='charge')])
-        # one-hot encode the element:
-        atomic_number = [one_hot_encode_element(data['element']) for _, data in aa_mol.nodes(data=True)]
-        is_aromatic = [1 if data['aromatic'] else 0 for _, data in aa_mol.nodes(data=True)]
-
-        dgl_graph.ndata['total_charge'] = torch.ones(dgl_graph.num_nodes()) * total_charge
-
-        dgl_graph.ndata['atomic_number'] = torch.stack(atomic_number).float()
-        dgl_graph.ndata['is_aromatic'] = torch.tensor(is_aromatic).float()
-
-    has_cg_encoding = any('cg_encoding' in data for _, data in aa_mol.nodes(data=True))
-    if has_cg_encoding:
-        cg_encoding = torch.tensor([data['cg_encoding'] for _, data in aa_mol.nodes(data=True)])
-        dgl_graph.ndata['cg_encoding'] = cg_encoding
-
-    return dgl_graph
 
 
 def rename_node_type(graph, old_name, new_name):
@@ -242,3 +142,292 @@ def rename_node_type(graph, old_name, new_name):
         new_graph.edges[etype].data.update(new_edge_data[etype])
 
     return new_graph
+
+
+def one_hot_encode_aromaticity(aromaticity: List[bool])->torch.Tensor:
+    """
+    One-hot encodes the aromaticity of a list of atoms.
+    Returns a tensor of shape (n_atoms, 2) where the first column is 1 if the atom is aromatic and the second column is 1 if the atom is not aromatic.
+    """
+    return torch.tensor([[1, 0] if aro else [0, 1] for aro in aromaticity]).float()
+
+def one_hot_encode_hcount(hcount: List[int])->torch.Tensor:
+    """
+    One-hot encodes the hydrogen count of a list of atoms.
+    Returns a tensor of shape (n_atoms, 5) where the first column is 1 if the atom has 0 hydrogens, the second column is 1 if the atom has 1 hydrogen, etc. 
+    """
+    return torch.tensor([[1 if h == i else 0 for i in range(MAX_NUM_H+1)] for h in hcount]).float()
+
+def encode_formal_charge(charge: List[int])->torch.Tensor:
+    """
+    Encodes the formal charge of a list of atoms.
+    Returns a tensor of shape (n_atoms, 1) with the formal charge of each atom. Here we choose the identity for simplicity now and clamp the charge to [-3, 3].
+    """
+    return torch.tensor(charge).float().clamp(-3, 3).unsqueeze(-1)
+
+def get_aa_features(node_features: dict)->dict:
+    """
+    Transforms the node features of the all-atom graph as stored by CGSmiles into a dictionary of torch tensors.
+    """
+
+    aa_features = {}
+    idxs = node_features['idx']
+    assert (np.array(idxs) == np.arange(len(idxs))).all(), f'Node indices should be in order but found {idxs} Otherwise, implement reshuffling.'
+
+    for key, value in node_features.items():
+        if key == 'element':
+            encoding = [one_hot_encode_element(v) for v in value]
+            aa_features[key] = torch.stack(encoding, dim=0).float()
+        elif key == 'aromatic':
+            aa_features[key] = one_hot_encode_aromaticity(value)
+        elif key == 'hcount':
+            aa_features[key] = one_hot_encode_hcount(value)
+        elif key == 'charge':
+            aa_features[key] = encode_formal_charge(value)
+        # elif key == 'idx':
+        #     aa_features[key] = torch.tensor([node_idx]).float()
+
+
+    return aa_features
+
+def get_cg_features(node_features: dict)->dict:
+    """
+    Transforms the node features of the coarse-grained graph as stored by CGSmiles into a dictionary of torch tensors.
+    """
+    cg_features = {}
+    idxs = node_features['idx']
+    assert (np.array(idxs) == np.arange(len(idxs))).all(), 'Node indices should be in order. Otherwise, implement reshuffling.'
+
+    for key, value in node_features.items():
+        if key == 'fragname':
+            cg_features[key] = torch.tensor(np.array([encode_beads_onehot(v) for v in value])).float()
+        # elif key == 'idx':
+        #     cg_features[key] = torch.tensor(value).float()
+
+    return cg_features
+
+def get_edge_features_aa(edge_features: dict)->dict:
+    """
+    Currently not used.
+    """
+    edge_features_out = {}
+    # for key, value in edge_features.items():
+        # if key == 'idx1' or key == 'idx2':
+        #     edge_features_out[key] = torch.tensor(value).float()
+
+    return edge_features_out
+
+def get_edge_features_cg(edge_features: dict)->dict:
+    """
+    Currently not used.
+    """
+    edge_features_out = {}
+    # for key, value in edge_features.items():
+        # if key == 'idx1' or key == 'idx2':
+        #     edge_features_out[key] = torch.tensor(value).float()
+
+    return edge_features_out
+
+def featurize_graph(g:dgl.DGLGraph, node_features_aa: dict, node_features_cg: dict, edge_features_aa: dict=None, edge_features_cg: dict=None)->dgl.DGLGraph:
+    """
+    Featurizes a dgl heterograph with node and edge features.
+    """
+    for key, value in node_features_aa.items():
+        g.nodes['aa'].data[key] = value
+
+    for key, value in node_features_cg.items():
+        g.nodes['cg'].data[key] = value
+
+    if edge_features_aa is None:
+        for key, value in edge_features_aa.items():
+            g.edges['aa_to_aa'].data[key] = value
+
+    if edge_features_cg is None:
+        for key, value in edge_features_cg.items():
+            g.edges['cg_to_cg'].data[key] = value
+
+    return g
+
+
+
+def get_hierarchical_graph(aa_graph: nx.Graph, cg_graph: nx.Graph, featurize:bool=True)->dgl.DGLGraph:
+    """
+    Constructs a dgl heterograph from the all-atom and coarse-grained networkx graphs.
+    For this, the fragid attribute of the nodes in the all-atom graph is used to determine to which hypernodes in the coarse-grained graph the nodes belong.
+    Edges between the all-atom and coarse-grained nodes are added if the all-atom node belongs to the respective hypernode.
+
+    Args:
+    - aa_graph: nx.Graph
+        The all-atom graph
+    - cg_graph: nx.Graph
+        The coarse-grained graph
+
+    Returns:
+    - hetero_graph: dgl.DGLGraph
+        The constructed heterograph with node types 'aa' and 'cg' and edge types 'aa_to_aa', 'cg_to_cg', 'aa_to_cg', 'cg_to_aa'
+    """
+
+    aa_data = get_node_data(aa_graph)
+    cg_data = get_node_data(cg_graph)
+
+    aa_edge_data = get_edge_data(aa_graph)
+    cg_edge_data = get_edge_data(cg_graph)
+
+    aa_edge_idxs = (aa_edge_data['idx1'], aa_edge_data['idx2'])
+    cg_edge_idxs = (cg_edge_data['idx1'], cg_edge_data['idx2'])
+
+    # define edges between aa-nodes and cg-nodes:
+    # the node aa_i is connected to the node cg_j if the node aa_i contains j as fragid
+    inter_level_edge_idx_1 = []
+    inter_level_edge_idx_2 = []
+    for node_idx, fragids in zip(aa_data['idx'], aa_data['fragid']):
+        for fragid in fragids:
+            # cg_node_idx = cg_data['idx'][fragid]
+            cg_node_idx = fragid
+            inter_level_edge_idx_1.append(node_idx)
+            inter_level_edge_idx_2.append(cg_node_idx)
+
+
+    # now make all edges undirected:
+    inter_level_edges_reversed_1 = inter_level_edge_idx_2
+    inter_level_edges_reversed_2 = inter_level_edge_idx_1
+
+    aa_edge_idxs = (aa_edge_idxs[0] + aa_edge_idxs[1], aa_edge_idxs[1] + aa_edge_idxs[0])
+
+    cg_edge_idxs = (cg_edge_idxs[0] + cg_edge_idxs[1], cg_edge_idxs[1] + cg_edge_idxs[0])
+
+    # construct a dgl heterograph:
+    data_dict = {
+        ('aa', 'aa_to_aa', 'aa'): aa_edge_idxs,
+        ('cg', 'cg_to_cg', 'cg'): cg_edge_idxs,
+        ('aa', 'aa_to_cg', 'cg'): (inter_level_edge_idx_1, inter_level_edge_idx_2),
+        ('cg', 'cg_to_aa', 'aa'): (inter_level_edges_reversed_1, inter_level_edges_reversed_2),
+        ('global', 'global_to_global', 'global'): ([0], [0])
+    }
+
+    hetero_graph = dgl.heterograph(data_dict)
+
+    if featurize:
+        node_features_aa = get_aa_features(aa_data)
+        node_features_cg = get_cg_features(cg_data)
+        edge_features_aa = get_edge_features_aa(aa_edge_data)
+        edge_features_cg = get_edge_features_cg(cg_edge_data)
+
+        hetero_graph = featurize_graph(g=hetero_graph, node_features_aa=node_features_aa, node_features_cg=node_features_cg, edge_features_aa=edge_features_aa, edge_features_cg=edge_features_cg)
+
+    return hetero_graph
+
+
+
+def get_node_data(subgraph: nx.Graph):
+    """
+    Returns a dictionary of lists where each key is a feature and each value is a list of that feature for each node in the subgraph.
+    The dictionary also contains a key 'idx' which is a list of the node indices defining the order-to-node mapping.
+    """
+    node_idxs, node_data = zip(*[(idx, feat_dict) for idx, feat_dict in subgraph.nodes(data=True)])
+
+    # node indices should be in order (otherwise, reshuffle is needed):
+    # assert (np.array(node_idxs) == np.arange(len(node_idxs))).all()
+
+    # reshape the list of dicts to a dict of lists:
+    all_feat_keys = set([k for d in node_data for k in d.keys()])
+
+    node_data = {k: [d.get(k, None) for d in node_data] for k in all_feat_keys}
+    node_data['idx'] = list(node_idxs)
+    # now sort node data dict lists such that idx is in order:
+    idx_order = np.argsort(node_data['idx'])
+    for k, v in node_data.items():
+        node_data[k] = [v[i] for i in idx_order]            
+    return node_data
+#%%
+
+def get_edge_data(subgraph: nx.Graph):
+    """
+    Returns a dictionary of lists where each key is a feature and each value is a list of that feature for each edge in the subgraph.
+    The dictionary also contains keys 'idx1' and 'idx2' which are lists of the node indices defining the order-to-node mapping.
+    """
+    edge_idxs1, edge_idxs2, edge_data = zip(*[(idx1, idx2, feat_dict) for idx1, idx2, feat_dict in subgraph.edges(data=True)]) if len(subgraph.edges) > 0 else ([], [], [])
+
+    # reshape the list of dicts to a dict of lists:
+    all_feat_keys = set([k for d in edge_data for k in d.keys()])
+
+    edge_data = {k: [d.get(k, None) for d in edge_data] for k in all_feat_keys}
+    edge_data['idx1'] = list(edge_idxs1)
+    edge_data['idx2'] = list(edge_idxs2)
+    return edge_data
+
+
+def dgl_from_cgsmiles(cgsmiles_str:str)->dgl.DGLGraph:
+    """
+    Constructs a featurized dgl graph from a CGSmiles string.
+    """
+    assert isinstance(cgsmiles_str, str), f"Expected cgsmiles_str to be a string, but got {type(cgsmiles_str)}"
+    cg_graph, aa_graph = cgsmiles.resolve.MoleculeResolver.from_string(cgsmiles_str).resolve_all()
+    g = get_hierarchical_graph(aa_graph=aa_graph, cg_graph=cg_graph, featurize=True)
+    return g
+
+
+def load_nx_dataset(p:Path)->Tuple[List[nx.Graph], List[nx.Graph], List[str], List[str], Dict[str, List[float]]]:
+    """
+    Loads a dataset of networkx graphs and log p values from a csv file.
+    Returns a list of all-atom graphs, a list of coarse-grained graphs, a list of molnames, a list of moltags, and a dictionary of log p values.
+    """
+    df = pd.read_csv(str(p)) if str(p).endswith('.csv') else pd.read_csv(str(p), delim_whitespace=True)
+
+    aa_mols, cg_mols, molnames, moltags = [], [], [], []
+    log_ps = {'OCO':[], 'HD':[], 'CLF':[]}
+    for i, row in tqdm(df.iterrows(), total=len(df)):
+        
+        mol_name, mol_tag, cgsmiles_str = row['mol_name'], row['mol_tag'], row['cgsmiles_str']
+
+        cg_mol, aa_mol = cgsmiles.resolve.MoleculeResolver.from_string(cgsmiles_str).resolve_all()
+
+        log_p_oco = row['OCO']
+        log_p_hd = row['HD']
+        log_p_clf = row['CLF']
+
+        log_ps['OCO'].append(log_p_oco)
+        log_ps['HD'].append(log_p_hd)
+        log_ps['CLF'].append(log_p_clf)
+
+        aa_mols.append(aa_mol)
+        cg_mols.append(cg_mol)
+        molnames.append(mol_name)
+        moltags.append(mol_tag)
+
+
+    return aa_mols, cg_mols, molnames, moltags, log_ps
+
+
+def is_single_bead(graph: dgl.DGLGraph)->bool:
+    """
+    Returns True if the coarse-grained graph is a single bead, i.e., if it has only one node.
+    """
+    return graph.number_of_nodes('cg') == 1
+
+
+def get_in_feats(g, in_feat_names:List[str], lvl='aa'):
+    return torch.cat([g.nodes[lvl].data[in_feat_name] for in_feat_name in in_feat_names], dim=-1)
+
+def get_in_feat_size(in_feat_names, lvl='aa'):
+
+    assert lvl in ['aa', 'cg'], f'received lvl {lvl}'
+    size = 0
+
+    if lvl == 'aa':
+        for in_feat_name in in_feat_names:
+            if in_feat_name == 'element':
+                size += len(ELEMENTS)
+            elif in_feat_name == 'aromatic':
+                size += 2
+            elif in_feat_name == 'hcount':
+                size += MAX_NUM_H + 1
+            elif in_feat_name == 'charge':
+                size += 1
+
+    elif lvl == 'cg':
+        for in_feat_name in in_feat_names:
+            if in_feat_name == 'fragname':
+                size += 21
+
+    return size

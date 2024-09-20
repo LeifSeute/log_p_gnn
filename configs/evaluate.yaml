@@ -1,0 +1,3 @@
+evaluate:
+  accelerator: gpu
+  ckpt_path: /local/user/seutelf/log_p_gnn/ckpt/logP-gnn/combined-deeper/2024-09-20_01-21-39/best.ckpt

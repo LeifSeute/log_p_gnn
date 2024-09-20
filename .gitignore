@@ -30,8 +30,14 @@ var/
 
 data/
 
+job.sh
+
 # exclude excel files in data:
 !data/*.xlsx
+!data/*.csv
+
+outputs/
+ckpt/
 
 notes.md
 

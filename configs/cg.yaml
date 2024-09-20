@@ -1,0 +1,17 @@
+defaults:
+  - train_hgcn
+  - _self_
+
+experiment:
+  wandb:
+    name: 'cg'
+
+model:
+  model_args:    
+    layers:
+      - cg
+      - cg_to_cg
+      - cg
+
+    pooling_lvl: 'cg'
+    hidden_feats: 24

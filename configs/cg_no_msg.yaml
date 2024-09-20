@@ -1,0 +1,15 @@
+defaults:
+  - train_hgcn
+  - _self_
+
+experiment:
+  wandb:
+    name: 'cg-no-msg'
+
+model:
+  model_args:    
+    layers: 
+      - cg
+
+    pooling_lvl: 'cg'
+    hidden_feats: 24

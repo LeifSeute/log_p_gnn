@@ -1,0 +1,15 @@
+defaults:
+  - train_hgcn
+  - _self_
+
+experiment:
+  wandb:
+    name: 'aa-no-msg'
+
+model:
+  model_args:    
+    layers: 
+      - aa
+
+    pooling_lvl: 'aa'
+    hidden_feats: 24

@@ -1,24 +1,44 @@
+## Installation
+
+### Requirements
+
+- dgl
+- hydra
+- pytorch
+- pysmiles
+- cgsmiles
+
 ### Installation
 
-```
-conda create -n log_p_gnn -y
-conda activate log_p_gnn
-bash installation.sh
-# install CGsmiles for creating datasets
+#### CPU MODE (for inference)
+```bash
+pip install -r installation/cpu_requirements.txt
+pip install -e .
 ```
 
+#### GPU MODE (for training)
+```bash
+pip install -r installation/requirements.txt
+pip install -e .
+```
 
-### Dataset Creation
-```
-bash scripts/generate_datasets.sh
-```
+See `installation/README.md`.
+
+
+
+### Inference
+
+See `scripts/inference.py` for an example of how to use the model for infering logP values from cgsmiles directly.
+
 
 ### Training
-```
-cd scripts
-python train_cg.py # (You will need to login to your free wandb account for tracking the metrics. Modify the config dict in the script to change the hyperparameters)
-```
 
+```bash
+python experiments/train.py --config-name combined
+```
 
 ### Evaluation
-Use the script in `scripts/evaluate.py` and insert your checkpoint path to evaluate the model.
+
+```bash
+python experiments/evaluate.py evaluate.ckpt_path=exported_ckpts/combined/best.ckpt
+```
