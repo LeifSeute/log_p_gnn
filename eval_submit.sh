@@ -1,0 +1,3 @@
+sbatch job.sh python experiments/evaluate.py evaluate.ckpt_path=/local/user/seutelf/log_p_gnn/ckpt/logP-gnn/aa/2024-09-27_10-48-11/best.ckpt
+sbatch job.sh python experiments/evaluate.py evaluate.ckpt_path=/local/user/seutelf/log_p_gnn/ckpt/logP-gnn/cg/2024-09-27_10-48-11/best.ckpt
+sbatch job.sh python experiments/evaluate.py evaluate.ckpt_path=/local/user/seutelf/log_p_gnn/ckpt/logP-gnn/cg-no-msg/2024-09-27_10-48-11/best.ckpt

@@ -4,12 +4,15 @@ defaults:
 
 experiment:
   wandb:
-    name: 'aa'
+    name: 'combined'
 
 model:
   model_args:    
     layers: 
+      - cg_to_cg
+      - cg_to_aa
       - aa_to_aa
+      - aa_to_cg
 
-    pooling_lvl: 'aa'
+    pooling_lvl: 'cg'
     hidden_feats: 32

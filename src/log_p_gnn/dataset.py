@@ -12,6 +12,7 @@ from pytorch_lightning import LightningDataModule
 import random
 from torch.utils.data import DataLoader
 import copy
+import logging
 
 class DGLDataset(Dataset):
     """
@@ -167,8 +168,36 @@ class DGLDataset(Dataset):
 
         return self.split(train_mol_tags, val_mol_tags, test_mol_tags)
     
+    def sklearn_split(self):
+        from sklearn.model_selection import train_test_split
+
+        tags_train, tags_test, y_train, y_test = train_test_split(self.mol_tags, [0]*len(self.mol_tags), test_size=0.10, random_state=42)
+
+        return self.split(train_tags=tags_train, val_tags=tags_test, test_tags=tags_test)
+    
     def __add__(self, other: Dataset)->Dataset:
         return DGLDataset(self.graphs + other.graphs, self.mol_names + other.mol_names, self.mol_tags + other.mol_tags)
+
+    def filter(self, min_logp=None, max_logp=None):
+        """
+        Sets the target to nan if it is outside the specified range.
+        Then filters out molecules that have only nan targets.
+        """
+        if min_logp is None and max_logp is None:
+            return self
+        
+        new_graphs = []
+        new_mol_names = []
+        new_mol_tags = []
+        for g, mol_name, mol_tag in zip(self.graphs, self.mol_names, self.mol_tags):
+            for target_key in g.nodes['global'].data.keys():
+                if (min_logp is not None and g.nodes['global'].data[target_key][0] < min_logp) or (max_logp is not None and g.nodes['global'].data[target_key][0] > max_logp):
+                    g.nodes['global'].data[target_key][0] = torch.tensor(float('nan'), dtype=torch.float32, device=g.nodes['global'].data[target_key].device)
+            if not all(torch.isnan(g.nodes['global'].data[target_key]) for target_key in g.nodes['global'].data.keys()):
+                new_graphs.append(g)
+                new_mol_names.append(mol_name)
+                new_mol_tags.append(mol_tag)
+        return DGLDataset(new_graphs, new_mol_names, new_mol_tags)
 
 
 class DataModule(LightningDataModule):
@@ -183,11 +212,18 @@ class DataModule(LightningDataModule):
 
     def setup(self, stage=None):
         self.dataset = DGLDataset.load(self.cfg.data.dataset_path)
-        self.train_dataset, self.val_dataset, self.test_dataset = self.dataset.split_single_bead_train(seed=self.cfg.data.seed, ratio=self.cfg.data.split_ratio)
+        if 'min_logp' in self.cfg.data and 'max_logp' in self.cfg.data:
+            self.dataset = self.dataset.filter(min_logp=self.cfg.data.min_logp, max_logp=self.cfg.data.max_logp) 
+        if 'sklearn_split' in self.cfg.data and self.cfg.data.sklearn_split:
+            logging.info('Using sklearn split with seed 42 and val=test')
+            self.train_dataset, self.val_dataset, self.test_dataset = self.dataset.sklearn_split()
+        else:
+            logging.info('Using random split with seed 0')
+            self.train_dataset, self.val_dataset, self.test_dataset = self.dataset.split_single_bead_train(seed=self.cfg.data.seed, ratio=self.cfg.data.split_ratio)
 
-        # print(f"Train: {len(self.train_dataset)}")
-        # print(f"Val: {len(self.val_dataset)}")
-        # print(f"Test: {len(self.test_dataset)}")
+        print(f"Train: {len(self.train_dataset)}")
+        print(f"Val: {len(self.val_dataset)}")
+        print(f"Test: {len(self.test_dataset)}")
 
         if not self.cfg.data.extra_dataset_path is None:
             self.extra_dataset = DGLDataset.load(self.cfg.data.extra_dataset_path)

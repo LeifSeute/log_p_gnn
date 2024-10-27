@@ -28,7 +28,7 @@ var/
 *.fls
 *.synctex.gz
 
-data/
+# data/
 
 slurm_logs/
 

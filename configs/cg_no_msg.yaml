@@ -12,4 +12,4 @@ model:
       - cg
 
     pooling_lvl: 'cg'
-    hidden_feats: 24
+    hidden_feats: 32

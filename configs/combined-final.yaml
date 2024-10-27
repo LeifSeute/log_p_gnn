@@ -4,11 +4,14 @@ defaults:
 
 experiment:
   wandb:
-    name: 'aa'
+    name: 'combined-final'
 
 model:
   model_args:    
     layers: 
+      - cg_to_cg
+      - cg_to_aa
+      - aa_to_aa
       - aa_to_aa
 
     pooling_lvl: 'aa'

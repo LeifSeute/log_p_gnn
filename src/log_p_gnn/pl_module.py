@@ -178,11 +178,13 @@ class PLModule(pl.LightningModule):
             mae = torch.nn.functional.l1_loss(preds, targets)
             rmse = torch.sqrt(torch.nn.functional.mse_loss(preds, targets))
             r = torch.corrcoef(torch.stack([preds, targets]))[0, 1]
+            std = torch.std(targets)
 
             # Store metrics in the summary
             metrics_summary[f'{k}/mae'] = mae.item()
             metrics_summary[f'{k}/rmse'] = rmse.item()
             metrics_summary[f'{k}/r'] = r.item()
+            metrics_summary[f'{k}/std'] = std.item()
 
             targets = targets.cpu().numpy()
             preds = preds.cpu().numpy()
@@ -215,7 +217,7 @@ def save_scatter_plot(x, y, xlabel, ylabel, title, filename):
     plt.plot([global_min, global_max], [global_min, global_max], color='black', linestyle='--', linewidth=1)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    plt.title(title)
+    # plt.title(title)
     plt.grid(True)
 
     # Save the plot to a file

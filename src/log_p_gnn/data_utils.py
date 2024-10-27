@@ -362,7 +362,7 @@ def dgl_from_cgsmiles(cgsmiles_str:str)->dgl.DGLGraph:
     Constructs a featurized dgl graph from a CGSmiles string.
     """
     assert isinstance(cgsmiles_str, str), f"Expected cgsmiles_str to be a string, but got {type(cgsmiles_str)}"
-    cg_graph, aa_graph = cgsmiles.resolve.MoleculeResolver.from_string(cgsmiles_str).resolve_all()
+    cg_graph, aa_graph = cgsmiles.resolve.MoleculeResolver.from_string(cgsmiles_str, legacy=True).resolve_all()
     g = get_hierarchical_graph(aa_graph=aa_graph, cg_graph=cg_graph, featurize=True)
     return g
 
@@ -380,7 +380,7 @@ def load_nx_dataset(p:Path)->Tuple[List[nx.Graph], List[nx.Graph], List[str], Li
         
         mol_name, mol_tag, cgsmiles_str = row['mol_name'], row['mol_tag'], row['cgsmiles_str']
 
-        cg_mol, aa_mol = cgsmiles.resolve.MoleculeResolver.from_string(cgsmiles_str).resolve_all()
+        cg_mol, aa_mol = cgsmiles.resolve.MoleculeResolver.from_string(cgsmiles_str, legacy=True).resolve_all()
 
         log_p_oco = row['OCO']
         log_p_hd = row['HD']
