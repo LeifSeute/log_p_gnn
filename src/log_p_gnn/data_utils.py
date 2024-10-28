@@ -393,6 +393,8 @@ def load_nx_dataset(p:Path)->Tuple[List[nx.Graph], List[nx.Graph], List[str], Li
         aa_mols.append(aa_mol)
         cg_mols.append(cg_mol)
         molnames.append(mol_name)
+        if mol_tag is None or pd.isna(mol_tag):
+            mol_tag = f'unknown_{i}'
         moltags.append(mol_tag)
 
 

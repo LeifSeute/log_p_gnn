@@ -27,11 +27,14 @@ def main(cfg: DictConfig) -> None:
         logging.warning("CUDA is not available. Running on CPU.")
         ckpt_cfg.experiment.trainer.accelerator = 'cpu'
 
+    # set data.extend_train_set to 1:
+    ckpt_cfg.data.extend_train_epoch = 1
+
     # init the experiment:
     exp = Experiment(cfg=ckpt_cfg)
 
     # test the model
-    exp.test(ckpt_path=ckpt_path)
+    exp.test(ckpt_path=ckpt_path, eval_all=True)
 
 
 if __name__ == "__main__":

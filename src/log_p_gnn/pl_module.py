@@ -22,6 +22,7 @@ class PLModule(pl.LightningModule):
         self.model = model
         self.cfg = config.experiment.training
         self.delta = config.experiment.training.delta
+        self.supress_log = False
 
     def loss_fn(self, x, target):
         # only apply mse where target is not nan
@@ -151,7 +152,8 @@ class PLModule(pl.LightningModule):
         loss = self.loss_fn(preds, target)
         loss_denom = torch.sum(~torch.isnan(target))
 
-        self.log('test_loss' if dataloader_idx == 0 else f'test_loss-{dataloader_idx}', loss, batch_size=loss_denom, on_step=False, on_epoch=True, add_dataloader_idx=False)
+        if not self.supress_log:
+            self.log('test_loss' if dataloader_idx == 0 else f'test_loss-{dataloader_idx}', loss, batch_size=loss_denom, on_step=False, on_epoch=True, add_dataloader_idx=False)
 
     def on_test_epoch_start(self):
         self.targets = {}

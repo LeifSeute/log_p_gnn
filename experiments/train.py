@@ -55,6 +55,7 @@ class Experiment:
 
     def create_data_module(self):
         self._datamodule: LightningDataModule = DataModule(self._cfg)
+        self._datamodule.setup('fit')
         
     def train(self):
         callbacks = []
@@ -96,7 +97,7 @@ class Experiment:
             ckpt_path=self._exp_cfg.warm_start
         )
 
-    def test(self, ckpt_path: str):
+    def test(self, ckpt_path: str, eval_all=False):
         self.trainer = Trainer(
             **self._exp_cfg.trainer,
             logger=False,
@@ -104,11 +105,35 @@ class Experiment:
             enable_model_summary=False,
             inference_mode=False # important for test call, force calculation needs autograd
         )
+
+        self._datamodule.setup('test')
+        
         # test the model
-        self._model.test_dir = Path(ckpt_path).parent
+        self._model.test_dir = Path(ckpt_path).parent/'test_set'
+        self._model.test_dir.mkdir(exist_ok=True, parents=True)
         self.trainer.test(
             model=self._model,
-            datamodule=self._datamodule,
+            dataloaders=self._datamodule.test_dataloader(),
+            ckpt_path=ckpt_path
+        )
+
+        if not eval_all:
+            return
+        self._model.supress_log = True
+        # now do the same for train and val (a bit hacky but lightning doesnt offer a simpler solution i think):
+        self._model.test_dir = Path(ckpt_path).parent/'train_set'
+        self._model.test_dir.mkdir(exist_ok=True, parents=True)
+        self.trainer.test(
+            model=self._model,
+            dataloaders=self._datamodule.train_dataloader(),
+            ckpt_path=ckpt_path
+        )
+
+        self._model.test_dir = Path(ckpt_path).parent/'val_set'
+        self._model.test_dir.mkdir(exist_ok=True, parents=True)
+        self.trainer.test(
+            model=self._model,
+            dataloaders=self._datamodule.val_dataloader(),
             ckpt_path=ckpt_path
         )
 

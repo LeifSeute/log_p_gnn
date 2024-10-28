@@ -108,6 +108,13 @@ class DGLDataset(Dataset):
         val_dataset = DGLDataset(val_graphs, val_mol_names, val_mol_tags)
         test_dataset = DGLDataset(test_graphs, test_mol_names, test_mol_tags)
 
+        print('train:')
+        print(train_mol_tags)
+        print('val:')
+        print(val_mol_tags)
+        print('test:')
+        print(test_mol_tags)
+
         return train_dataset, val_dataset, test_dataset
     
 
