@@ -103,12 +103,15 @@ class Experiment:
             logger=False,
             enable_progress_bar=self._exp_cfg.use_tqdm,
             enable_model_summary=False,
-            inference_mode=False # important for test call, force calculation needs autograd
+            devices=1,
+            num_nodes=1,
+            strategy='auto',
         )
 
         self._datamodule.setup('test')
         
         # test the model
+        self._model.supress_log = True
         self._model.test_dir = Path(ckpt_path).parent/'test_set'
         self._model.test_dir.mkdir(exist_ok=True, parents=True)
         self.trainer.test(
@@ -119,8 +122,9 @@ class Experiment:
 
         if not eval_all:
             return
-        self._model.supress_log = True
-        # now do the same for train and val (a bit hacky but lightning doesnt offer a simpler solution i think):
+        
+        # now do the same for train and val (a bit hacky but lightning doesnt offer a simpler solution):
+
         self._model.test_dir = Path(ckpt_path).parent/'train_set'
         self._model.test_dir.mkdir(exist_ok=True, parents=True)
         self.trainer.test(
@@ -128,6 +132,13 @@ class Experiment:
             dataloaders=self._datamodule.train_dataloader(),
             ckpt_path=ckpt_path
         )
+
+        # n = 0
+        # for batch in self._datamodule.train_dataloader():
+        #     n += batch.num_nodes('global')
+
+        # print(n)
+        # return
 
         self._model.test_dir = Path(ckpt_path).parent/'val_set'
         self._model.test_dir.mkdir(exist_ok=True, parents=True)

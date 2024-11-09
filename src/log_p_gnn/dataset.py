@@ -108,11 +108,11 @@ class DGLDataset(Dataset):
         val_dataset = DGLDataset(val_graphs, val_mol_names, val_mol_tags)
         test_dataset = DGLDataset(test_graphs, test_mol_names, test_mol_tags)
 
-        print('train:')
+        print('train tags:')
         print(train_mol_tags)
-        print('val:')
+        print('val tags:')
         print(val_mol_tags)
-        print('test:')
+        print('test tags:')
         print(test_mol_tags)
 
         return train_dataset, val_dataset, test_dataset
@@ -228,9 +228,6 @@ class DataModule(LightningDataModule):
             logging.info('Using random split with seed 0')
             self.train_dataset, self.val_dataset, self.test_dataset = self.dataset.split_single_bead_train(seed=self.cfg.data.seed, ratio=self.cfg.data.split_ratio)
 
-        print(f"Train: {len(self.train_dataset)}")
-        print(f"Val: {len(self.val_dataset)}")
-        print(f"Test: {len(self.test_dataset)}")
 
         if not self.cfg.data.extra_dataset_path is None:
             self.extra_dataset = DGLDataset.load(self.cfg.data.extra_dataset_path)
@@ -242,7 +239,7 @@ class DataModule(LightningDataModule):
             self.extra_dataset = None
             self.extra_dataset_tr = None
 
-        print(f"Train: {len(self.train_dataset)}")	
+        print(f"Train: {len(self.train_dataset)}")
         print(f"Val: {len(self.val_dataset)}")
         print(f"Test: {len(self.test_dataset)}")
 
@@ -255,7 +252,7 @@ class DataModule(LightningDataModule):
         
         extended_train_set = self.train_dataset + self.extra_dataset_tr if not self.extra_dataset_tr is None else self.train_dataset
         if self.extend_train_epoch > 0:
-            for _ in range(self.extend_train_epoch):
+            for _ in range(self.extend_train_epoch-1):
                 extended_train_set += self.train_dataset
 
         return DataLoader(extended_train_set, batch_size=self.batch_size, shuffle=True, collate_fn=extended_train_set.collate_fn, drop_last=True, num_workers=2)

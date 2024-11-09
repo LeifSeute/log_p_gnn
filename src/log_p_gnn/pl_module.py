@@ -79,7 +79,6 @@ class PLModule(pl.LightningModule):
             self.targets[k_str].append(target)
             self.predictions[k_str].append(pred)
 
-        # print([t.shape for t in targets])
         target = torch.cat(targets, dim=1)
 
         loss = self.loss_fn(preds, target)
@@ -134,6 +133,7 @@ class PLModule(pl.LightningModule):
     def test_step(self, batch, batch_idx, dataloader_idx=0):
         g = batch
         batchsize = g.num_nodes('global')
+        print(batchsize)
         preds = self.forward(g)
 
         targets = [g.nodes['global'].data[k] for k in self.cfg.target_keys]
@@ -180,12 +180,15 @@ class PLModule(pl.LightningModule):
             mae = torch.nn.functional.l1_loss(preds, targets)
             rmse = torch.sqrt(torch.nn.functional.mse_loss(preds, targets))
             r = torch.corrcoef(torch.stack([preds, targets]))[0, 1]
+            r2 = r**2
             std = torch.std(targets)
 
             # Store metrics in the summary
             metrics_summary[f'{k}/mae'] = mae.item()
             metrics_summary[f'{k}/rmse'] = rmse.item()
             metrics_summary[f'{k}/r'] = r.item()
+            metrics_summary[f'{k}/r2'] = r2.item()
+            metrics_summary[f'{k}/num_values'] = len(targets.flatten())
             metrics_summary[f'{k}/std'] = std.item()
 
             targets = targets.cpu().numpy()

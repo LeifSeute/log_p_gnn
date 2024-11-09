@@ -1,0 +1,26 @@
+defaults:
+  - train_hgcn
+  - _self_
+
+experiment:
+  wandb:
+    name: 'combined-final'
+
+model:
+  model_args:
+    in_feat_names:
+      aa: ['element', 'charge', 'aromatic']
+      # aa: ['element']
+      cg: ['fragname']
+    layers:
+      - cg_to_cg
+      - cg_to_aa
+      # - aa_to_aa
+      - aa_to_aa
+
+    pooling_lvl: 'aa'
+    hidden_feats: 32
+    p_dropout: 0.5
+
+data: 
+  extend_train_epoch: 20

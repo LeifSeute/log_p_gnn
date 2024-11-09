@@ -5,7 +5,7 @@ from pathlib import Path
 
 thisdir = Path(__file__).parent
 
-CKPT_PATH = thisdir.parent / 'exported_ckpts/combined/best.ckpt'
+CKPT_PATH = thisdir.parent / 'exported_ckpts/11-09-2024/best.ckpt'
 
 # instantiate a wrapper class:
 logp_gnn = LogPGNN(ckpt_path=CKPT_PATH)

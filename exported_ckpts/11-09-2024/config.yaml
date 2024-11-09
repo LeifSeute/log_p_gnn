@@ -1,0 +1,70 @@
+data:
+  dataset_path: data/all_logP_v5.csv
+  extra_dataset_path: data/large_polymers_corrected.ss
+  extra_train_mols: 0.0
+  extend_train_epoch: 50
+  seed: 123
+  split_ratio:
+  - 0.8
+  - 0.1
+  - 0.1
+model:
+  class_path: log_p_gnn.cg_model.HGCN
+  model_args:
+    in_feat_names:
+      aa:
+      - element
+      - charge
+      - aromatic
+      cg:
+      - fragname
+    layers:
+    - cg_to_cg
+    - cg_to_aa
+    - aa_to_aa
+    pooling_lvl: aa
+    hidden_feats: 32
+    layer_norm: true
+    p_dropout: 0.4
+    scaling: true
+    scaling_mode: global
+    scaling_power_min: 0.3
+    scaling_power_max: 1.0
+experiment:
+  use_wandb: true
+  use_tqdm: true
+  seed: 123
+  warm_start: null
+  warm_start_cfg_override: true
+  training:
+    batch_size: 8
+    target_keys:
+    - OCO
+    - HD
+    - CLF
+    lr: 0.001
+    scatter_plots: true
+    delta: 3.0
+  trainer:
+    overfit_batches: 0
+    min_epochs: 1
+    max_epochs: 100
+    accelerator: gpu
+    log_every_n_steps: 10
+    deterministic: false
+    check_val_every_n_epoch: 1
+    default_root_dir: outputs/
+    accumulate_grad_batches: 1
+  wandb:
+    name: combined-final
+    project: logP-gnn-full-ds
+    save_dir: outputs/
+  checkpointer:
+    dirpath: ckpt/${experiment.wandb.project}/${experiment.wandb.name}/${now:%Y-%m-%d}_${now:%H-%M-%S}
+    monitor: val_loss
+    mode: min
+    save_top_k: 1
+    save_last: true
+    every_n_epochs: 1
+    auto_insert_metric_name: false
+    filename: best
