@@ -10,7 +10,13 @@
 
 ### Installation
 
+It is recommended to use python 3.9:
+```
+conda create -n log_p_test python=3.9 -y
+```
+
 #### CPU MODE (for inference)
+
 ```bash
 pip install -r installation/cpu_requirements.txt
 pip install -e .
