@@ -151,3 +151,4 @@ mains/**.out
 **.edr**
 
 !exported_ckpts/**/*.json
+logs/
