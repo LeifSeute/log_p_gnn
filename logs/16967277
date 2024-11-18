@@ -1,0 +1,80 @@
+[2024-11-18 11:38:16,514][root][INFO] - Using random split with seed 0
+train tags:
+['W', 'butene', 'propene', 'ethene', 'butyne', 'propyne', '1-propanol', '2-propanol', 'ethanol', 'methanol', 'isobutanal', 'propanal', 'ethanal', 'butane', '2-methylpropane', '2-methyl-propane', 'propane', 'cyclopropane', 'ethane', 'DMFD', 'propanamide', 'acetamide', 'formamide', 'propanoic', 'acetic', 'buta-1,3-diene', 'prop-2-en-1-ol', 'methyl acetate', 'methyl formate', '1-chloropropane', 'TCM', 'bromopropane', 'iodoethane', 'trichloromethane', '1,1-dichloroethane', 'DCE', 'chloroethane', 'dichloromethane', 'bromoethane', 'iodomethane', 'chloromethane', 'bromomethane', 'butanone', 'propanone', 'acetonitrile', 'propane-1-thiol', 'dimethyl-sulfide', 'n-propylamine', 'ethylamine', 'methylamine', 'dimethylamine', 'trimethylamine', 'glycine', 'HXY', 'OCY', 'OCO', 'HPO', 'HXA', 'HPAL', 'BTA', 'CHEX', 'HEX', 'HXE', 'HXD14', 'ETA', 'NBA', 'TBA', 'THP', 'DIOX', 'DXE', 'HXN', 'HPN', 'DMSO', 'PTI', 'HXI', 'HPI', 'BTI', 'HD', 'HXY', 'OCY', 'HXD14', 'TCE', 'IPO', 'ETH', 'NDI', 'DMAD', 'methylhydrazine', 'dibromomethane', 'chlorobromomethane', 'propane', 'difluoromethane', 'diiodomethane', '355120-85-3', 'methoxymethane', 'carbondioxide', 'cyanamide', 'propa-1,2-diene', 'bromoethene', 'chlorofluoromethane', 'cyanamide', 'vinylchloride', 'MAC', 'PVA2', 'MMAC', 'PEG2', 'STYR', 'MAMD', 'PVA', 'AAC', 'MEH', '2VP', '4VP', 'ALA', 'MKA', '12BD', 'R9', 'R25', 'R27', 'R29', 'R11', 'R13', 'R1', 'R23', 'R31', 'R33', 'R204', 'R18', '1MIMI', '2MPYR', '3HT', '3PT', '4MIMI', '4NIAN', 'ACPH', 'BEAL', 'BENZ', 'BRA', 'BZDOL', 'BZQU', 'BZTF', 'CHEX', 'CHEXE', 'CPR', 'CYPO', 'CYPOL', 'DBRBZ', 'DCLBZ', 'DIOX', 'DMAN', 'DMBZQ', 'DXLA', 'IMID', 'IOBZ', 'IOPHE', 'MCYPE', 'CHEX', 'NAPH', 'NIBZ', 'OMA', 'OXYLE', 'PBEN', 'PCYM', 'PHEN', 'PXYLE', 'PYAZ', 'PYLI', 'PYRI', 'PYRR', 'STYR', 'TCLBZ', 'THIO', 'THP', 'THPH', 'THT', 'TOLU', 'XBZ', 'GLC', 'GAL', 'GLA', 'LFUC', 'XYL', 'INO', 'TREH', 'LAC', 'RIBF', 'RN/RP', 'PI/PP', 'NE/NP', 'TN/TP', 'Double_ester_branched', 'CA/CP', 'SC1_ester_SC1', 'C4h_ester_C4h', 'Double_ester_long', 'Z1/ZP', 'DT/DP', 'C1_ester_C1', 'EA/EP', 'AE/AP', 'B1/BP', 'K2/KP', 'M3/MP', 'Ether_link_sat', 'FN/FP', 'Ester_branched3', 'ES/EP', 'Ester_branched_long_sat', 'unknown_251', 'unknown_252', 'unknown_253', 'unknown_254', 'unknown_255', 'unknown_256', 'unknown_257', 'unknown_259', 'unknown_260', 'unknown_261', 'unknown_262', 'unknown_263', 'unknown_264', 'unknown_265', 'unknown_267', 'unknown_268', 'unknown_269', 'unknown_271', 'unknown_272', 'unknown_273', 'unknown_274', 'unknown_277', 'unknown_278', 'unknown_279', 'unknown_280', 'unknown_281', 'unknown_282', 'unknown_283', 'unknown_284', 'unknown_285', 'unknown_286', 'unknown_290', 'unknown_291', 'unknown_294', 'unknown_295', 'unknown_296', 'unknown_297']
+val tags:
+['HXO', 'BTO', 'OCT', 'TFEOL', 'ANN', 'OCI', 'DOE', 'STYR', 'PP', '2NIMX', 'ANIL', 'BRBZ', 'MBZOA', 'PBZOA', 'PIPER', 'STYR', 'THAZ', 'THF', 'MAN', 'GYN', 'NMC', 'SUCR', 'ALC', 'S1/SP', 'Ether_link_unsat', 'Ester_branched_long_unsat', 'unknown_266', 'unknown_270', 'unknown_276', 'unknown_287', 'unknown_292']
+test tags:
+['HXY', 'OCY', 'CHEX', 'OCE', 'IBA', 'DISH', 'DISS', 'DOD', 'HXY', 'OCY', 'TXE', 'AAMD', 'R202', '2NITL', 'BZNI', 'CHEX', 'CLBZ', 'CUME', 'CYPE', 'EBEN', 'FURA', 'CHEX', 'MXYLE', 'PCRE', 'LRHA', 'FRUF', 'DMG', 'unknown_258', 'unknown_275', 'unknown_288', 'unknown_289', 'unknown_293', 'unknown_298', 'unknown_299', 'unknown_300']
+train tags:
+[]
+val tags:
+[]
+test tags:
+[6, 7, 11, 12, 13, 14, 15, 16]
+Train: 244
+Val: 31
+Test: 35
+Extra Train: 0
+Extra Val: 8
+[2024-11-18 11:38:19,603][root][INFO] - Using random split with seed 0
+train tags:
+['W', 'butene', 'propene', 'ethene', 'butyne', 'propyne', '1-propanol', '2-propanol', 'ethanol', 'methanol', 'isobutanal', 'propanal', 'ethanal', 'butane', '2-methylpropane', '2-methyl-propane', 'propane', 'cyclopropane', 'ethane', 'DMFD', 'propanamide', 'acetamide', 'formamide', 'propanoic', 'acetic', 'buta-1,3-diene', 'prop-2-en-1-ol', 'methyl acetate', 'methyl formate', '1-chloropropane', 'TCM', 'bromopropane', 'iodoethane', 'trichloromethane', '1,1-dichloroethane', 'DCE', 'chloroethane', 'dichloromethane', 'bromoethane', 'iodomethane', 'chloromethane', 'bromomethane', 'butanone', 'propanone', 'acetonitrile', 'propane-1-thiol', 'dimethyl-sulfide', 'n-propylamine', 'ethylamine', 'methylamine', 'dimethylamine', 'trimethylamine', 'glycine', 'HXY', 'OCY', 'OCO', 'HPO', 'HXA', 'HPAL', 'BTA', 'CHEX', 'HEX', 'HXE', 'HXD14', 'ETA', 'NBA', 'TBA', 'THP', 'DIOX', 'DXE', 'HXN', 'HPN', 'DMSO', 'PTI', 'HXI', 'HPI', 'BTI', 'HD', 'HXY', 'OCY', 'HXD14', 'TCE', 'IPO', 'ETH', 'NDI', 'DMAD', 'methylhydrazine', 'dibromomethane', 'chlorobromomethane', 'propane', 'difluoromethane', 'diiodomethane', '355120-85-3', 'methoxymethane', 'carbondioxide', 'cyanamide', 'propa-1,2-diene', 'bromoethene', 'chlorofluoromethane', 'cyanamide', 'vinylchloride', 'MAC', 'PVA2', 'MMAC', 'PEG2', 'STYR', 'MAMD', 'PVA', 'AAC', 'MEH', '2VP', '4VP', 'ALA', 'MKA', '12BD', 'R9', 'R25', 'R27', 'R29', 'R11', 'R13', 'R1', 'R23', 'R31', 'R33', 'R204', 'R18', '1MIMI', '2MPYR', '3HT', '3PT', '4MIMI', '4NIAN', 'ACPH', 'BEAL', 'BENZ', 'BRA', 'BZDOL', 'BZQU', 'BZTF', 'CHEX', 'CHEXE', 'CPR', 'CYPO', 'CYPOL', 'DBRBZ', 'DCLBZ', 'DIOX', 'DMAN', 'DMBZQ', 'DXLA', 'IMID', 'IOBZ', 'IOPHE', 'MCYPE', 'CHEX', 'NAPH', 'NIBZ', 'OMA', 'OXYLE', 'PBEN', 'PCYM', 'PHEN', 'PXYLE', 'PYAZ', 'PYLI', 'PYRI', 'PYRR', 'STYR', 'TCLBZ', 'THIO', 'THP', 'THPH', 'THT', 'TOLU', 'XBZ', 'GLC', 'GAL', 'GLA', 'LFUC', 'XYL', 'INO', 'TREH', 'LAC', 'RIBF', 'RN/RP', 'PI/PP', 'NE/NP', 'TN/TP', 'Double_ester_branched', 'CA/CP', 'SC1_ester_SC1', 'C4h_ester_C4h', 'Double_ester_long', 'Z1/ZP', 'DT/DP', 'C1_ester_C1', 'EA/EP', 'AE/AP', 'B1/BP', 'K2/KP', 'M3/MP', 'Ether_link_sat', 'FN/FP', 'Ester_branched3', 'ES/EP', 'Ester_branched_long_sat', 'unknown_251', 'unknown_252', 'unknown_253', 'unknown_254', 'unknown_255', 'unknown_256', 'unknown_257', 'unknown_259', 'unknown_260', 'unknown_261', 'unknown_262', 'unknown_263', 'unknown_264', 'unknown_265', 'unknown_267', 'unknown_268', 'unknown_269', 'unknown_271', 'unknown_272', 'unknown_273', 'unknown_274', 'unknown_277', 'unknown_278', 'unknown_279', 'unknown_280', 'unknown_281', 'unknown_282', 'unknown_283', 'unknown_284', 'unknown_285', 'unknown_286', 'unknown_290', 'unknown_291', 'unknown_294', 'unknown_295', 'unknown_296', 'unknown_297']
+val tags:
+['HXO', 'BTO', 'OCT', 'TFEOL', 'ANN', 'OCI', 'DOE', 'STYR', 'PP', '2NIMX', 'ANIL', 'BRBZ', 'MBZOA', 'PBZOA', 'PIPER', 'STYR', 'THAZ', 'THF', 'MAN', 'GYN', 'NMC', 'SUCR', 'ALC', 'S1/SP', 'Ether_link_unsat', 'Ester_branched_long_unsat', 'unknown_266', 'unknown_270', 'unknown_276', 'unknown_287', 'unknown_292']
+test tags:
+['HXY', 'OCY', 'CHEX', 'OCE', 'IBA', 'DISH', 'DISS', 'DOD', 'HXY', 'OCY', 'TXE', 'AAMD', 'R202', '2NITL', 'BZNI', 'CHEX', 'CLBZ', 'CUME', 'CYPE', 'EBEN', 'FURA', 'CHEX', 'MXYLE', 'PCRE', 'LRHA', 'FRUF', 'DMG', 'unknown_258', 'unknown_275', 'unknown_288', 'unknown_289', 'unknown_293', 'unknown_298', 'unknown_299', 'unknown_300']
+train tags:
+[]
+val tags:
+[]
+test tags:
+[6, 7, 11, 12, 13, 14, 15, 16]
+Train: 244
+Val: 31
+Test: 35
+Extra Train: 0
+Extra Val: 8
+Testing: |          | 0/? [00:00<?, ?it/s]Testing:   0%|          | 0/5 [00:00<?, ?it/s]Testing DataLoader 0:   0%|          | 0/5 [00:00<?, ?it/s]8
+Testing DataLoader 0:  20%|██        | 1/5 [00:00<00:02,  1.67it/s]8
+Testing DataLoader 0:  40%|████      | 2/5 [00:00<00:00,  3.27it/s]8
+Testing DataLoader 0:  60%|██████    | 3/5 [00:00<00:00,  4.79it/s]8
+Testing DataLoader 0:  80%|████████  | 4/5 [00:00<00:00,  6.27it/s]3
+Testing DataLoader 0: 100%|██████████| 5/5 [00:00<00:00,  7.64it/s]Testing DataLoader 0:   0%|          | 0/1 [00:00<?, ?it/s]        Testing DataLoader 1:   0%|          | 0/1 [00:00<?, ?it/s]8
+Testing DataLoader 1: 100%|██████████| 1/1 [00:00<00:00, 110.49it/s]Testing DataLoader 1: 100%|██████████| 1/1 [00:00<00:00,  1.38it/s] 
+Testing: |          | 0/? [00:00<?, ?it/s]Testing:   0%|          | 0/30 [00:00<?, ?it/s]Testing DataLoader 0:   0%|          | 0/30 [00:00<?, ?it/s]8
+Testing DataLoader 0:   3%|▎         | 1/30 [00:00<00:00, 112.58it/s]8
+Testing DataLoader 0:   7%|▋         | 2/30 [00:00<00:00, 71.76it/s] 8
+Testing DataLoader 0:  10%|█         | 3/30 [00:00<00:00, 85.25it/s]8
+Testing DataLoader 0:  13%|█▎        | 4/30 [00:00<00:00, 74.74it/s]8
+Testing DataLoader 0:  17%|█▋        | 5/30 [00:00<00:00, 82.24it/s]8
+Testing DataLoader 0:  20%|██        | 6/30 [00:00<00:00, 82.58it/s]8
+Testing DataLoader 0:  23%|██▎       | 7/30 [00:00<00:00, 80.96it/s]8
+Testing DataLoader 0:  27%|██▋       | 8/30 [00:00<00:00, 79.51it/s]8
+Testing DataLoader 0:  30%|███       | 9/30 [00:00<00:00, 79.82it/s]8
+Testing DataLoader 0:  33%|███▎      | 10/30 [00:00<00:00, 79.31it/s]8
+Testing DataLoader 0:  37%|███▋      | 11/30 [00:00<00:00, 79.60it/s]8
+Testing DataLoader 0:  40%|████      | 12/30 [00:00<00:00, 79.05it/s]8
+Testing DataLoader 0:  43%|████▎     | 13/30 [00:00<00:00, 79.34it/s]8
+Testing DataLoader 0:  47%|████▋     | 14/30 [00:00<00:00, 78.90it/s]8
+Testing DataLoader 0:  50%|█████     | 15/30 [00:00<00:00, 79.18it/s]8
+Testing DataLoader 0:  53%|█████▎    | 16/30 [00:00<00:00, 78.89it/s]8
+Testing DataLoader 0:  57%|█████▋    | 17/30 [00:00<00:00, 79.10it/s]8
+Testing DataLoader 0:  60%|██████    | 18/30 [00:00<00:00, 79.02it/s]8
+Testing DataLoader 0:  63%|██████▎   | 19/30 [00:00<00:00, 79.18it/s]8
+Testing DataLoader 0:  67%|██████▋   | 20/30 [00:00<00:00, 79.26it/s]8
+Testing DataLoader 0:  70%|███████   | 21/30 [00:00<00:00, 79.44it/s]8
+Testing DataLoader 0:  73%|███████▎  | 22/30 [00:00<00:00, 79.61it/s]8
+Testing DataLoader 0:  77%|███████▋  | 23/30 [00:00<00:00, 79.75it/s]8
+Testing DataLoader 0:  80%|████████  | 24/30 [00:00<00:00, 79.85it/s]8
+Testing DataLoader 0:  83%|████████▎ | 25/30 [00:00<00:00, 80.00it/s]8
+Testing DataLoader 0:  87%|████████▋ | 26/30 [00:00<00:00, 80.08it/s]8
+Testing DataLoader 0:  90%|█████████ | 27/30 [00:00<00:00, 80.29it/s]8
+Testing DataLoader 0:  93%|█████████▎| 28/30 [00:00<00:00, 80.42it/s]8
+Testing DataLoader 0:  97%|█████████▋| 29/30 [00:00<00:00, 80.51it/s]8
+Testing DataLoader 0: 100%|██████████| 30/30 [00:00<00:00, 80.65it/s]Testing DataLoader 0: 100%|██████████| 30/30 [00:00<00:00, 31.43it/s]
+Testing: |          | 0/? [00:00<?, ?it/s]Testing:   0%|          | 0/4 [00:00<?, ?it/s]Testing DataLoader 0:   0%|          | 0/4 [00:00<?, ?it/s]8
+Testing DataLoader 0:  25%|██▌       | 1/4 [00:00<00:00, 114.77it/s]8
+Testing DataLoader 0:  50%|█████     | 2/4 [00:00<00:00, 93.26it/s] 8
+Testing DataLoader 0:  75%|███████▌  | 3/4 [00:00<00:00, 90.79it/s]7
+Testing DataLoader 0: 100%|██████████| 4/4 [00:00<00:00, 89.75it/s]Testing DataLoader 0:   0%|          | 0/1 [00:00<?, ?it/s]        Testing DataLoader 1:   0%|          | 0/1 [00:00<?, ?it/s]8
+Testing DataLoader 1: 100%|██████████| 1/1 [00:00<00:00, 107.21it/s]Testing DataLoader 1: 100%|██████████| 1/1 [00:00<00:00,  1.43it/s] 

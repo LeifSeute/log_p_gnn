@@ -149,3 +149,5 @@ mains/**.out
 **.tpr**
 **.trr**
 **.edr**
+
+!exported_ckpts/**/*.json

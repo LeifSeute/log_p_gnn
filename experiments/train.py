@@ -133,12 +133,6 @@ class Experiment:
             ckpt_path=ckpt_path
         )
 
-        # n = 0
-        # for batch in self._datamodule.train_dataloader():
-        #     n += batch.num_nodes('global')
-
-        # print(n)
-        # return
 
         self._model.test_dir = Path(ckpt_path).parent/'val_set'
         self._model.test_dir.mkdir(exist_ok=True, parents=True)
