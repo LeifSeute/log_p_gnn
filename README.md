@@ -1,4 +1,9 @@
-## Installation
+### Paper results
+
+```bash
+cd scripts
+python run_RF.py
+```
 
 ### Requirements
 

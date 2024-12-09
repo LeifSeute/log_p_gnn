@@ -108,7 +108,7 @@ class Experiment:
             strategy='auto',
         )
 
-        self._datamodule.setup('test')
+        self._datamodule.setup()
         
         # test the model
         self._model.supress_log = True
@@ -143,7 +143,7 @@ class Experiment:
         )
 
 
-@hydra.main(version_base=None, config_path="../configs", config_name="train_hgcn.yaml")
+@hydra.main(version_base=None, config_path="../configs", config_name="combined-final.yaml")
 def main(cfg: DictConfig):
     
     if cfg.experiment.warm_start is not None and cfg.experiment.warm_start_cfg_override:

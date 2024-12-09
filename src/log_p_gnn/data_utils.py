@@ -371,6 +371,7 @@ def load_nx_dataset(p:Path)->Tuple[List[nx.Graph], List[nx.Graph], List[str], Li
     """
     Loads a dataset of networkx graphs and log p values from a csv file.
     Returns a list of all-atom graphs, a list of coarse-grained graphs, a list of molnames, a list of moltags, and a dictionary of log p values.
+    For the tags we choose the cgsmiles string.
     """
     df = pd.read_csv(str(p)) if str(p).endswith('.csv') else pd.read_csv(str(p), delim_whitespace=True)
 
@@ -378,7 +379,7 @@ def load_nx_dataset(p:Path)->Tuple[List[nx.Graph], List[nx.Graph], List[str], Li
     log_ps = {'OCO':[], 'HD':[], 'CLF':[]}
     for i, row in tqdm(df.iterrows(), total=len(df)):
         
-        mol_name, mol_tag, cgsmiles_str = row['mol_name'], row['mol_tag'], row['cgsmiles_str']
+        mol_name, cgsmiles_str = row['mol_name'], row['cgsmiles_str']
 
         cg_mol, aa_mol = cgsmiles.resolve.MoleculeResolver.from_string(cgsmiles_str, legacy=True).resolve_all()
 
@@ -393,9 +394,7 @@ def load_nx_dataset(p:Path)->Tuple[List[nx.Graph], List[nx.Graph], List[str], Li
         aa_mols.append(aa_mol)
         cg_mols.append(cg_mol)
         molnames.append(mol_name)
-        if mol_tag is None or pd.isna(mol_tag):
-            mol_tag = f'unknown_{i}'
-        moltags.append(mol_tag)
+        moltags.append(cgsmiles_str)
 
 
     return aa_mols, cg_mols, molnames, moltags, log_ps

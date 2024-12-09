@@ -133,7 +133,6 @@ class PLModule(pl.LightningModule):
     def test_step(self, batch, batch_idx, dataloader_idx=0):
         g = batch
         batchsize = g.num_nodes('global')
-        print(batchsize)
         preds = self.forward(g)
 
         targets = [g.nodes['global'].data[k] for k in self.cfg.target_keys]
@@ -170,7 +169,9 @@ class PLModule(pl.LightningModule):
                 targets_ = torch.cat(self.targets[k], dim=0).flatten()
                 preds_ = torch.cat(self.predictions[k], dim=0).flatten()
 
+
             mask = ~torch.isnan(targets_)
+
             if mask.sum() == 0:
                 continue
 

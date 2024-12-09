@@ -13,6 +13,11 @@ import random
 from torch.utils.data import DataLoader
 import copy
 import logging
+import json
+from pathlib import Path
+
+# log to stdout:
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 class DGLDataset(Dataset):
     """
@@ -88,9 +93,22 @@ class DGLDataset(Dataset):
         """
         Splits the dataset into train, validation and test sets.
         """
+        logging.info('Validating that the train val test mol_tags are disjoint...')
+
+        # assert that the sets are non-overlapping:
+        if not len(set(train_tags).intersection(val_tags)) == 0:
+            raise ValueError(f'train and val tags are not disjoint. Intersection: {set(train_tags).intersection(val_tags)}')
+        if not len(set(train_tags).intersection(test_tags)) == 0:
+            raise ValueError(f'train and test tags are not disjoint. Intersection: {set(train_tags).intersection(test_tags)}')
+        if not len(set(val_tags).intersection(test_tags)) == 0:
+            raise ValueError(f'val and test tags are not disjoint. Intersection: {set(val_tags).intersection(test_tags)}')
+        
         train_idx = [i for i, mol_tag in enumerate(self.mol_tags) if mol_tag in train_tags]
         val_idx = [i for i, mol_tag in enumerate(self.mol_tags) if mol_tag in val_tags]
         test_idx = [i for i, mol_tag in enumerate(self.mol_tags) if mol_tag in test_tags]
+
+        assert len(train_idx) + len(val_idx) + len(test_idx) == len(self.graphs), f"Length mismatch: {len(train_idx)} + {len(val_idx)} + {len(test_idx)} != {len(self.graphs)}"
+
         
         train_graphs = [self.graphs[i] for i in train_idx]
         val_graphs = [self.graphs[i] for i in val_idx]
@@ -104,16 +122,11 @@ class DGLDataset(Dataset):
         val_mol_tags = [self.mol_tags[i] for i in val_idx]
         test_mol_tags = [self.mol_tags[i] for i in test_idx]
 
+
         train_dataset = DGLDataset(train_graphs, train_mol_names, train_mol_tags)
         val_dataset = DGLDataset(val_graphs, val_mol_names, val_mol_tags)
         test_dataset = DGLDataset(test_graphs, test_mol_names, test_mol_tags)
 
-        print('train tags:')
-        print(train_mol_tags)
-        print('val tags:')
-        print(val_mol_tags)
-        print('test tags:')
-        print(test_mol_tags)
 
         return train_dataset, val_dataset, test_dataset
     
@@ -123,11 +136,19 @@ class DGLDataset(Dataset):
         Splits the dataset into train, validation and test sets such that all single-bead molecules are in the training set.
         """
 
+        logging.info(f'Splitting with seed {seed}')
+
         single_bead_moltags = [self.mol_tags[i] for i, g in enumerate(self.graphs) if is_single_bead(g)]
         multi_bead_moltags = [self.mol_tags[i] for i, g in enumerate(self.graphs) if not is_single_bead(g)]
 
+        # make deterministic duplicate removing (set does not work with seeding!)
+        unique_multi_bead_moltags = []
+        for m in multi_bead_moltags:
+            if not m in unique_multi_bead_moltags:
+                unique_multi_bead_moltags.append(m)
+
         # now distribute the remaining multi-bead molecules:
-        n = len(multi_bead_moltags) + len(single_bead_moltags)
+        n = len(unique_multi_bead_moltags) + len(single_bead_moltags)
         n_train = int(n*ratio[0]) - len(single_bead_moltags)
         n_train = max(n_train, 0)
         n_val = int(n*ratio[1])
@@ -139,12 +160,12 @@ class DGLDataset(Dataset):
 
         # shuffle the multi-bead molecules
         random.seed(seed)
-        multi_bead_moltags = copy.deepcopy(multi_bead_moltags)
-        random.shuffle(multi_bead_moltags)
+        unique_multi_bead_moltags = copy.deepcopy(unique_multi_bead_moltags)
+        random.shuffle(unique_multi_bead_moltags)
 
-        train_moltags = single_bead_moltags + multi_bead_moltags[:n_train]
-        val_moltags = multi_bead_moltags[n_train:n_train+n_val]
-        test_moltags = multi_bead_moltags[n_train+n_val:]
+        train_moltags = single_bead_moltags + unique_multi_bead_moltags[:n_train]
+        val_moltags = unique_multi_bead_moltags[n_train:n_train+n_val]
+        test_moltags = unique_multi_bead_moltags[n_train+n_val:]
 
         return self.split(train_moltags, val_moltags, test_moltags)
 
@@ -161,6 +182,8 @@ class DGLDataset(Dataset):
         assert n_val >= 0
         assert n_test >= 0
 
+        unique_tags = list(set(self.mol_tags))
+        n = len(unique_tags)
         idx = list(range(n))
         random.seed(seed)
         random.shuffle(idx)
@@ -169,9 +192,9 @@ class DGLDataset(Dataset):
         val_idx = idx[n_train:n_train+n_val]
         test_idx = idx[n_train+n_val:]
 
-        train_mol_tags = [self.mol_tags[i] for i in train_idx]
-        val_mol_tags = [self.mol_tags[i] for i in val_idx]
-        test_mol_tags = [self.mol_tags[i] for i in test_idx]
+        train_mol_tags = [unique_tags[i] for i in train_idx]
+        val_mol_tags = [unique_tags[i] for i in val_idx]
+        test_mol_tags = [unique_tags[i] for i in test_idx]
 
         return self.split(train_mol_tags, val_mol_tags, test_mol_tags)
     
@@ -222,10 +245,10 @@ class DataModule(LightningDataModule):
         if 'min_logp' in self.cfg.data and 'max_logp' in self.cfg.data:
             self.dataset = self.dataset.filter(min_logp=self.cfg.data.min_logp, max_logp=self.cfg.data.max_logp) 
         if 'sklearn_split' in self.cfg.data and self.cfg.data.sklearn_split:
-            logging.info('Using sklearn split with seed 42 and val=test')
-            self.train_dataset, self.val_dataset, self.test_dataset = self.dataset.sklearn_split()
+            raise DeprecationWarning('sklearn_split is deprecated. Use random_split instead.')
+            raise NotImplementedError('sklearn_split is not implemented')
         else:
-            logging.info('Using random split with seed 0')
+            logging.info('Using random split with single beads in train')
             self.train_dataset, self.val_dataset, self.test_dataset = self.dataset.split_single_bead_train(seed=self.cfg.data.seed, ratio=self.cfg.data.split_ratio)
 
 
@@ -238,6 +261,19 @@ class DataModule(LightningDataModule):
         else:
             self.extra_dataset = None
             self.extra_dataset_tr = None
+
+        # store the train val test tags in the same dir as the checkpoints:
+        ckpt_dir = self.cfg.experiment.checkpointer.dirpath
+        Path(ckpt_dir).mkdir(parents=True, exist_ok=True)
+        extra_tr_tags = self.extra_dataset_tr.mol_tags if not self.extra_dataset_tr is None else []
+        extra_val_tags = self.extra_dataset.mol_tags if not self.extra_dataset is None else []
+        for tags, dirname in zip([self.train_dataset.mol_tags+extra_tr_tags, self.val_dataset.mol_tags+extra_val_tags, self.test_dataset.mol_tags], ['train', 'val', 'test']):
+            tags = copy.deepcopy(tags)
+            tags = list(set(tags))
+            with open(Path(ckpt_dir)/f'{dirname}_mol_tags.json', 'w') as f:
+                json.dump(tags, f)
+            logging.info(f'Saved {dirname} mol tags to {str(Path(ckpt_dir)/f"{dirname}_mol_tags.json")}')
+
 
         print(f"Train: {len(self.train_dataset)}")
         print(f"Val: {len(self.val_dataset)}")
@@ -255,7 +291,7 @@ class DataModule(LightningDataModule):
             for _ in range(self.extend_train_epoch-1):
                 extended_train_set += self.train_dataset
 
-        return DataLoader(extended_train_set, batch_size=self.batch_size, shuffle=True, collate_fn=extended_train_set.collate_fn, drop_last=True, num_workers=2)
+        return DataLoader(extended_train_set, batch_size=self.batch_size, shuffle=True, collate_fn=extended_train_set.collate_fn, drop_last=False, num_workers=2)
 
     def val_dataloader(self):
         if self.extra_dataset is None:

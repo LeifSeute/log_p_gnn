@@ -4,7 +4,8 @@ defaults:
 
 experiment:
   wandb:
-    name: 'combined-final'
+    name: combined-final
+    project: log-p-gnn-new-split
 
 model:
   model_args:    
