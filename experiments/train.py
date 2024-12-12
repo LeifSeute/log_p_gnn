@@ -143,7 +143,7 @@ class Experiment:
         )
 
 
-@hydra.main(version_base=None, config_path="../configs", config_name="combined-final.yaml")
+@hydra.main(version_base=None, config_path="../configs", config_name="train_hgcn_new.yaml")
 def main(cfg: DictConfig):
     
     if cfg.experiment.warm_start is not None and cfg.experiment.warm_start_cfg_override:

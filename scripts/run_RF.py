@@ -11,10 +11,13 @@ import pysmiles
 import cgsmiles
 import optuna
 import matplotlib.pyplot as plt
+from pathlib import Path
 
-ckpt_dir = '../exported_ckpts/new-split-paper'
+ckpt_dir = '../exported_ckpts/extended-12-11-2024'
 
-df_dir = '../data/all_logP_v5.csv'
+df_dir = '../data/all_logP_v5_extended.csv'
+
+this_dir = Path(__file__).parent
 
 #%%
 def read_inter_matrix(datafile="levels.dat"):
@@ -523,7 +526,7 @@ ax3.set(xlabel='$\Delta$G reference (kJ/mol)')
 ax1.legend()
 ax2.legend()
 ax3.legend()
-plt.savefig('RF_results.png', dpi=300)
+plt.savefig(this_dir/'RF_results.png', dpi=300)
 # %%
 
 # PLOT GNN
@@ -600,5 +603,5 @@ ax2.legend()
 ax3.legend()
 for ax in [ax1, ax2, ax3]:
     ax.plot([-45 , 60], [-45, 60], c='black', ls='--')
-plt.savefig('GNN_results.png', dpi=300)
+plt.savefig(this_dir/'GNN_results.png', dpi=300)
 # %%

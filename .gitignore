@@ -151,4 +151,5 @@ mains/**.out
 **.edr**
 
 !exported_ckpts/**/*.json
+!exported_ckpts**/*.npz
 logs/
