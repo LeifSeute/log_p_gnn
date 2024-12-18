@@ -13,11 +13,12 @@ import optuna
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-ckpt_dir = '../exported_ckpts/extended-12-11-2024'
-
-df_dir = '../data/all_logP_v5_extended.csv'
-
 this_dir = Path(__file__).parent
+
+ckpt_dir = str(this_dir/'../exported_ckpts/extended-12-13-2024')
+
+df_dir = str(this_dir/'../data/all_logP_v5_extended.csv')
+
 
 #%%
 def read_inter_matrix(datafile="levels.dat"):
@@ -277,7 +278,7 @@ from tqdm import tqdm
 
 
 def generate_fingerprint_vectors(df, mol_labels):
-    level_matrix, bead_to_index = read_inter_matrix('./levels.dat')
+    level_matrix, bead_to_index = read_inter_matrix(str(this_dir/'levels.dat'))
     # mol_strings = read_mol_strings() 
 
     n_oco = df["OCO"].notna().sum()
@@ -494,7 +495,7 @@ ax1.scatter(y_OCO_test, correction(clf.predict(vector_OCO_test),  **params),
 ax1.text(10, -50, s="MAE: " + str(evaluation['MEA']['OCO']) +"kJ/mol")
 ax1.text(10, -60, s="$R^2$: " + str(evaluation['R2']['OCO']))
 
-ax1.set_xlim(-50, 60)
+ax1.set_xlim(-50, 80)
 
 ntrain_CLF=vector_CLF_tain.shape[0]
 ntest_CLF=vector_CLF_test.shape[0]
@@ -505,7 +506,7 @@ ax2.scatter(y_CLF_test, correction(clf.predict(vector_CLF_test),  **params),
 ax2.text(10, -50, s="MAE: " + str(evaluation['MEA']['CLF']) +"kJ/mol")
 ax2.text(10, -60, s="$R^2$: " + str(evaluation['R2']['CLF']))
 
-ax2.set_xlim(-50, 60)
+ax2.set_xlim(-50, 83)
 ntrain_HD=vector_HD_train.shape[0]
 ntest_HD=vector_HD_test.shape[0]
 ax3.scatter(y_HD_train, correction(clf.predict(vector_HD_train),  **params), 
@@ -515,10 +516,10 @@ ax3.scatter(y_HD_test, correction(clf.predict(vector_HD_test),  **params),
 ax3.text(10, -50, s="MAE: " + str(evaluation['MEA']['HD']) +"kJ/mol")
 ax3.text(10, -60, s="$R^2$: " + str(evaluation['R2']['HD']))
 
-ax3.set_xlim(-50, 60)
+ax3.set_xlim(-50, 83)
 
 for ax in [ax1, ax2, ax3]:
-    ax.plot([-45 , 55], [-45, 55], c='black', ls='--')
+    ax.plot([-60 , 90], [-60, 90], c='black', ls='--')
 
 ax1.set(xlabel='$\Delta$G reference (kJ/mol)', ylabel='$\Delta$G predicted (kJ/mol)')
 ax2.set(xlabel='$\Delta$G reference (kJ/mol)')
@@ -573,7 +574,7 @@ ax1.scatter(gnn_data_test['target-OCO'], gnn_data_test['prediction-OCO'],
 ax1.text(10, -50, s="MAE: " + str(evaluation['MEA']['OCO']) +"kJ/mol")
 ax1.text(10, -60, s="$R^2$: " + str(evaluation['R2']['OCO']))
 
-ax1.set_xlim(-50, 60)
+ax1.set_xlim(-50, 83)
 
 ntrain_CLF=gnn_data_train['target-CLF'].shape[0]
 ntest_CLF=gnn_data_test['target-CLF'].shape[0]
@@ -584,7 +585,7 @@ ax2.scatter(gnn_data_test['target-CLF'], gnn_data_test['prediction-CLF'],
 ax2.text(10, -50, s="MAE: " + str(evaluation['MEA']['CLF']) +"kJ/mol")
 ax2.text(10, -60, s="$R^2$: " + str(evaluation['R2']['CLF']))
 
-ax2.set_xlim(-50, 60)
+ax2.set_xlim(-50, 83)
 ntrain_HD=gnn_data_train['target-HD'].shape[0]
 ntest_HD=gnn_data_test['target-HD'].shape[0]
 ax3.scatter(gnn_data_train['target-HD'], gnn_data_train['prediction-HD'], 
@@ -594,7 +595,7 @@ ax3.scatter(gnn_data_test['target-HD'], gnn_data_test['prediction-HD'],
 ax3.text(10, -50, s="MAE: " + str(evaluation['MEA']['HD']) +"kJ/mol")
 ax3.text(10, -60, s="$R^2$: " + str(evaluation['R2']['HD']))
 
-ax3.set_xlim(-50, 60)
+ax3.set_xlim(-50, 83)
 ax1.set(xlabel='$\Delta$G reference (kJ/mol)', ylabel='$\Delta$G predicted (kJ/mol)')
 ax2.set(xlabel='$\Delta$G reference (kJ/mol)')
 ax3.set(xlabel='$\Delta$G reference (kJ/mol)')
@@ -602,6 +603,6 @@ ax1.legend()
 ax2.legend()
 ax3.legend()
 for ax in [ax1, ax2, ax3]:
-    ax.plot([-45 , 60], [-45, 60], c='black', ls='--')
+    ax.plot([-60 , 90], [-60, 90], c='black', ls='--')
 plt.savefig(this_dir/'GNN_results.png', dpi=300)
 # %%

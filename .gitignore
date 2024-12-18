@@ -96,11 +96,8 @@ old_src/
 data/
 runs/
 
-# do not ignore data/ in grappa/src/grappa/data:
-!src/grappa/data/
-!src/grappa/models/
+!data/all_logP_v5_extended.csv
 
-esp_data/
 data_backup/
 npy_charge_dicts/
 **/nohup.out
