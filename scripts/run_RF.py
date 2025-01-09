@@ -74,8 +74,8 @@ def generate_feature_vector(mol_str_a, mol_str_b, bead_matrix, bead_to_index, po
     Generate the graph of a Martini molecule and
     assing bead types.
     """
-    feat_level_matrix_W = np.zeros((19, 6),dtype=float)
-    feat_level_matrix_SOL = np.zeros((19, 6),dtype=float)
+    feat_level_matrix_W = np.zeros((20, 6),dtype=float)
+    feat_level_matrix_SOL = np.zeros((20, 6),dtype=float)
     feat_bead_count_vector = np.zeros((1), dtype=float)
     size_to_plane = {frozenset((0, 0)): 0,
                      frozenset((1, 1)): 1,
@@ -289,9 +289,9 @@ def generate_fingerprint_vectors(df, mol_labels):
     print('n_clf', n_clf)
     
     # fingerprint vectors
-    vector_OCO = np.zeros((n_oco, 229), dtype=int)
-    vector_HD = np.zeros((n_hd, 229), dtype=int)
-    vector_CLF = np.zeros((n_clf, 229), dtype=int)
+    vector_OCO = np.zeros((n_oco, 241), dtype=int)
+    vector_HD = np.zeros((n_hd, 241), dtype=int)
+    vector_CLF = np.zeros((n_clf, 241), dtype=int)
 
     # labels
     y_OCO = np.zeros(n_oco, dtype=float)
