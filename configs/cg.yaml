@@ -11,6 +11,7 @@ model:
     layers:
       - cg
       - cg_to_cg
+      - cg_to_cg
       - cg
 
     pooling_lvl: 'cg'
