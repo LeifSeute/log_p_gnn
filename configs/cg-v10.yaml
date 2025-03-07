@@ -1,0 +1,25 @@
+defaults:
+  - train_hgcn_new
+  - _self_
+
+data:
+  dataset_path: data/all_extended_and_decoys.csv
+
+experiment:
+  wandb:
+    name: 'cg-v10a'
+    project: 'extended'
+
+training:
+    target_keys: ['OCO', 'HD', 'CLF']
+
+model:
+  model_args:    
+    layers:
+      - cg
+      - cg_to_cg
+      - cg
+      - cg_to_cg
+
+    pooling_lvl: 'cg'
+    hidden_feats: 32
