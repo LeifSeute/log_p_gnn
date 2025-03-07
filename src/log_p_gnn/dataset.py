@@ -252,15 +252,15 @@ class DataModule(LightningDataModule):
             self.train_dataset, self.val_dataset, self.test_dataset = self.dataset.split_single_bead_train(seed=self.cfg.data.seed, ratio=self.cfg.data.split_ratio)
 
 
-        if not self.cfg.data.extra_dataset_path is None:
-            self.extra_dataset = DGLDataset.load(self.cfg.data.extra_dataset_path)
-
+    #    if not self.cfg.data.extra_dataset_path is None:
+    #        self.extra_dataset = DGLDataset.load(self.cfg.data.extra_dataset_path)
+#
             # split the dataset into train and rest. rest is both val and trian because its val part is only used for logging, not for early stopping...
-            self.extra_dataset_tr, extra_dataset_val, extra_dataset_test = self.extra_dataset.random_split(ratio=[self.cfg.data.extra_train_mols, 0., 1-self.cfg.data.extra_train_mols], seed=self.cfg.data.seed)
-            self.extra_dataset = extra_dataset_test + extra_dataset_val
-        else:
-            self.extra_dataset = None
-            self.extra_dataset_tr = None
+ #           self.extra_dataset_tr, extra_dataset_val, extra_dataset_test = self.extra_dataset.random_split(ratio=[self.cfg.data.extra_train_mols, 0., 1-self.cfg.data.extra_train_mols], seed=self.cfg.data.seed)
+   #         self.extra_dataset = extra_dataset_test + extra_dataset_val
+   #     else:
+        self.extra_dataset = None
+        self.extra_dataset_tr = None
 
         # store the train val test tags in the same dir as the checkpoints:
         ckpt_dir = self.cfg.experiment.checkpointer.dirpath
