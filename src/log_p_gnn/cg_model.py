@@ -267,7 +267,7 @@ class HGCN(torch.nn.Module):
 
         self.pooling = Pooling(lvl=pooling_lvl, pred_scaling=scaling and scaling_mode=='local', min_power=scaling_power_min, max_power=scaling_power_max, out_feats=out_feats, in_feats=hidden_feats if scaling_mode=='local' else out_feats)
 
-        self.scaling = LearnableSizeScaling(out_feats, min_power=scaling_power_min, max_power=scaling_power_max) if scaling and scaling_mode=='global' else None
+        self.scaling = LearnableSizeScaling(out_feats, min_power=scaling_power_min, max_power=scaling_power_max, set_id=True) if scaling and scaling_mode=='global' else None
 
 
     def forward(self, g):

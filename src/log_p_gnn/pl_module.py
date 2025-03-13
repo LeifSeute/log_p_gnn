@@ -60,6 +60,18 @@ class PLModule(pl.LightningModule):
             self.log('train_mae', mae, on_step=False, on_epoch=True, batch_size=loss_denom)
             rmse = torch.sqrt(mse)
             self.log('train_rmse', rmse, on_step=False, on_epoch=True, batch_size=loss_denom)
+
+        predictions = [x[:, i] for i in range(x.shape[1])]
+        
+        # store the targets
+        for k, target, pred in zip(self.cfg.target_keys, targets, predictions):
+            k_str = k
+            if k_str not in self.train_targets:
+                self.train_targets[k_str] = []
+                self.train_predictions[k_str] = []
+            self.train_targets[k_str].append(target.detach().clone().cpu())
+            self.train_predictions[k_str].append(pred.detach().clone().cpu())
+
         return loss
     
     def validation_step(self, batch, batch_idx, dataloader_idx=0):
@@ -122,13 +134,45 @@ class PLModule(pl.LightningModule):
             # if wandb is used:
             if wandb.run is not None and self.cfg.scatter_plots:
                 add_scatter_plot_wand(targets, preds, 'target', 'prediction', f'{k}', f'val-{k}/scatter_plot')
-                
 
+    def on_train_epoch_start(self):
+        self.train_targets = {}
+        self.train_predictions = {}
+
+    def on_train_epoch_end(self):
+        # calculate mae and rmse for each target key and also for the sum of all target keys
+        # further, calculate the pearson correlation coefficient for each target key
+        for k in list(self.train_targets.keys()) + ['all']:
+            if k == 'all':
+                targets_ = torch.cat([torch.cat(self.train_targets[k], dim=0) for k in self.cfg.target_keys], dim=0).flatten()
+                preds_ = torch.cat([torch.cat(self.train_predictions[k], dim=0) for k in self.cfg.target_keys], dim=0).flatten()
+            else:
+                targets_ = torch.cat(self.train_targets[k], dim=0).flatten()
+                preds_ = torch.cat(self.train_predictions[k], dim=0).flatten()
+
+            mask = ~torch.isnan(targets_)
+            if mask.sum() == 0:
+                continue
+            
+            targets = targets_[mask]
+            preds = preds_[mask]
+
+            mae = torch.nn.functional.l1_loss(preds, targets)
+            rmse = torch.sqrt(torch.nn.functional.mse_loss(preds, targets))
+            r = torch.corrcoef(torch.stack([preds, targets]))[0, 1]
+
+            self.log(f'train-{k}/mae', mae, on_step=False, on_epoch=True)
+            self.log(f'train-{k}/rmse', rmse, on_step=False, on_epoch=True)
+            self.log(f'train-{k}/r', r, on_step=False, on_epoch=True)
+            
+            # Add scatter plot to wandb using the wandb.plot.scatter method
+            # if wandb is used:
+            if wandb.run is not None and self.cfg.scatter_plots:
+                add_scatter_plot_wand(targets, preds, 'target', 'prediction', f'{k}', f'train-{k}/scatter_plot')
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.model.parameters(), lr=self.cfg.lr)
     
-
 
     def test_step(self, batch, batch_idx, dataloader_idx=0):
         g = batch

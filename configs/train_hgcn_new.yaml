@@ -2,13 +2,13 @@ data:
   dataset_path: data/all_logP_v5_extended.csv
   # dataset_path: data/all_logP_v5.csv
 
-  extra_dataset_path: data/large_polymers_corrected.ss
-  extra_train_mols: 0.0
+  #extra_dataset_path: data/large_polymers_corrected.ss
+  #extra_train_mols: 0.0
   
   extend_train_epoch: 50 # factor by which to extend the training dataset by self-replication (for speedup in lightning)
 
   seed: 42
-  split_ratio: [0.6, 0.1, 0.3]
+  split_ratio: [0.8, 0.1, 0.1]
   # sklearn_split: True
   # min_logp: -20
   # max_logp: 35
@@ -18,7 +18,7 @@ model:
   model_args:
     in_feat_names:
       aa: ['element', 'charge', 'aromatic']
-      cg: ['fragname']
+      cg: ['fragname', 'size']
     
     layers: 
       - cg_to_cg
@@ -28,7 +28,7 @@ model:
     pooling_lvl: 'aa'
     hidden_feats: 64
     layer_norm: True
-    p_dropout: 0.4
+    p_dropout: 0.0
     scaling: True
     scaling_mode: 'global'
     scaling_power_min: 0.3

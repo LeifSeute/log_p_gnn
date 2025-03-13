@@ -187,7 +187,6 @@ def get_aa_features(node_features: dict)->dict:
         # elif key == 'idx':
         #     aa_features[key] = torch.tensor([node_idx]).float()
 
-
     return aa_features
 
 def get_cg_features(node_features: dict)->dict:
@@ -201,8 +200,8 @@ def get_cg_features(node_features: dict)->dict:
     for key, value in node_features.items():
         if key == 'fragname':
             cg_features[key] = torch.tensor(np.array([encode_beads_onehot(v) for v in value])).float()
-        # elif key == 'idx':
-        #     cg_features[key] = torch.tensor(value).float()
+        elif key == 'size':
+            cg_features[key] = torch.tensor(value).int().clamp(-3, 3).unsqueeze(-1)
 
     return cg_features
 
@@ -266,6 +265,8 @@ def get_hierarchical_graph(aa_graph: nx.Graph, cg_graph: nx.Graph, featurize:boo
     - hetero_graph: dgl.DGLGraph
         The constructed heterograph with node types 'aa' and 'cg' and edge types 'aa_to_aa', 'cg_to_cg', 'aa_to_cg', 'cg_to_aa'
     """
+    # annotate the total size of the graph at cg level
+    nx.set_node_attributes(cg_graph, len(cg_graph), 'size')
 
     aa_data = get_node_data(aa_graph)
     cg_data = get_node_data(cg_graph)
@@ -362,7 +363,7 @@ def dgl_from_cgsmiles(cgsmiles_str:str)->dgl.DGLGraph:
     Constructs a featurized dgl graph from a CGSmiles string.
     """
     assert isinstance(cgsmiles_str, str), f"Expected cgsmiles_str to be a string, but got {type(cgsmiles_str)}"
-    cg_graph, aa_graph = cgsmiles.resolve.MoleculeResolver.from_string(cgsmiles_str, legacy=True).resolve_all()
+    cg_graph, aa_graph = cgsmiles.resolve.MoleculeResolver.from_string(cgsmiles_str).resolve()
     g = get_hierarchical_graph(aa_graph=aa_graph, cg_graph=cg_graph, featurize=True)
     return g
 
@@ -381,7 +382,7 @@ def load_nx_dataset(p:Path)->Tuple[List[nx.Graph], List[nx.Graph], List[str], Li
         
         mol_name, cgsmiles_str = row['mol_name'], row['cgsmiles_str']
 
-        cg_mol, aa_mol = cgsmiles.resolve.MoleculeResolver.from_string(cgsmiles_str, legacy=True).resolve_all()
+        cg_mol, aa_mol = cgsmiles.resolve.MoleculeResolver.from_string(cgsmiles_str).resolve()
 
         log_p_oco = row['OCO']
         log_p_hd = row['HD']
@@ -408,6 +409,8 @@ def is_single_bead(graph: dgl.DGLGraph)->bool:
 
 
 def get_in_feats(g, in_feat_names:List[str], lvl='aa'):
+    for name in in_feat_names:
+        test = name, g.nodes[lvl].data[name]
     return torch.cat([g.nodes[lvl].data[in_feat_name] for in_feat_name in in_feat_names], dim=-1)
 
 def get_in_feat_size(in_feat_names, lvl='aa'):
@@ -430,5 +433,7 @@ def get_in_feat_size(in_feat_names, lvl='aa'):
         for in_feat_name in in_feat_names:
             if in_feat_name == 'fragname':
                 size += 21
+            elif in_feat_name == 'size':
+                size += 1
 
     return size
